@@ -8,9 +8,9 @@ req1="screen";
 req2="sudo"; 
 
 if [[ $(type $req1 2>&1 | grep -c 'not found') -eq 1 ]]; 
-	then echo "Dependency $(echo $req1) not found";
+	then echo "Dependency $(echo $req1) not found. Please install it via your package manager.";
 elif [[ $(type $req2 2>&1 | grep -c 'not found') -eq 1 ]]; 	
-	then echo "Dependency $(echo $req2) not found";
+	then echo "Dependency $(echo $req2) not found. Please install it via your package manager";
 else echo "All dependencies met"; 
 fi
 
