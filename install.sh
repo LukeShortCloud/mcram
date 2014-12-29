@@ -1,6 +1,6 @@
 #!`which bash`
 #MCRAM - Installer - installer.sh
-#v0.1
+#v0.1-1
 
 echo -e "\e[1m \e[36m"; #Changes color to light blue 
 
