@@ -47,10 +47,11 @@ echo "tmpfs ${ramlocation} tmpfs defaults,noatime,size=${rammb}M 0 0" >> /etc/fs
 
 #Setup the cron
 cp -af ./mccron-template.sh ./mccron.sh
-replace '$mclocation' "$mclocation" -- ./mccron.sh
-replace '$ramlocation' "$ramlocation" -- ./mccron.sh
-replace '${mcstartram}' "$mcstartram" -- ./mccron.sh
-replace '$mcstart' "$mcstart" -- ./mccron.sh
+sed -i s'/$mclocation/'"$mclocation"'/g' ./mccron.sh
+sed -i s'/$ramlocation/'"$ramlocation"'/g' ./mccron.sh
+sed -i s'/${mcstartram}/'"$mcstartram"'/g' ./mccron.sh
+sed -i s'/$mcstart/'"$mcstart"'/g' ./mccron.sh
+
 
 echo -e "$(crontab -l)\n@reboot /bin/sh `pwd`/mccron.sh" | crontab -
 
