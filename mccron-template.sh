@@ -13,7 +13,7 @@ while [[ 1 -gt 0 ]]; do
 	sleep 1h;
 	screen -p 0 -S mcram -X eval 'stuff "save-all"\015';
 	sleep 60;
-	screen -S mcrsync -p 0 -X stuff $'rsync -varP $ramlocation/ $mclocation/\n' #rsync the data back to the drive
+	screen -S mcrsync -p 0 -X stuff $'rsync -varP $ramlocation/ $mclocation/; echo "Scheduled sync complete on $(date)."\n' #rsync the data back to the drive
 done
 
 
