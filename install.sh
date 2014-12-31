@@ -1,6 +1,6 @@
 #!`which bash`
 #MCRAM - Installer - installer.sh
-#v0.1-1
+#v0.1-2
 
 echo -e "\e[1m \e[36m"; #Changes color to light blue 
 
@@ -18,6 +18,9 @@ echo 'Please provide full folder paths. For example: /home/myuser/Documents/MC/'
 read -p 'Where is your server located? ' mclocation; while [[ ! -f "$mclocation/server.properties" ]]; do read -p 'Invalid location. Please try again: ' mclocation; done 
 if [[ $(\ls $mclocation | grep -c jar) -eq 1 ]]; 
 	then mcstart=$(\ls $mclocation | grep jar)
+elif [[ $(\ls $mclocation | grep -c jar) -eq 0 ]];
+	then echo "No executable server jar file was found in $mclocation";
+	echo "Try re-downloading the minecaft_server.jar from minecraft.net"; exit
 else 
 	echo "Here is a list of possible server jar files: "; \ls $mclocation | grep jar; 
 	read -p 'Which one would you like to use to start your server with? ' mcstart; 
