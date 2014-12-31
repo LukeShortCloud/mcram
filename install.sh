@@ -33,16 +33,21 @@ read -p 'What directory do you want RAM mounted onto for MC? ' ramlocation;
 mkdir -p $ramlocation
 
 echo "Your computer has $(expr $(grep MemTotal /proc/meminfo | awk {'print $2'}) / 1024)MB of RAM"
-read -p 'What percentage of RAM would you like to use for mounting Minecraft into RAM? (Default is 10): ' rampercentage;
-read -p 'What amount of RAM (in MB) would you like to use for running Minecraft? (Default is 256): ' mcstartram;
 
+read -p 'What percentage of RAM would you like to use for mounting Minecraft into RAM? (Default is 10): ' rampercentage;
 if [[ $rampercentage -eq "" ]]; 
 	then rammb=$(expr $(grep MemTotal /proc/meminfo | awk {'print $2'}) / 1024 \* 10 / 100);
 	else rammb=$(expr $(grep MemTotal /proc/meminfo | awk {'print $2'}) / 1024 \* $rampercentage / 100);
 fi
 
+read -p 'What amount of RAM (in MB) would you like to use for running Minecraft? (Default is 256): ' mcstartram;
 if [[ $mcstartram -eq "" ]]; 
 	then mcstartram="256"
+fi
+
+read -p 'How long (in minutes) do you want to wait for the server to sync to the drive again? (Default is 60): ' synctime;
+if [[ $synctime -eq "" ]]; 
+	then synctime="60"
 fi
 	
 echo "Mounting ${rammb}MB of RAM onto $ramlocation"
@@ -54,6 +59,7 @@ sed -i s'/$mclocation/'"$mclocation"'/g' ./mccron.sh
 sed -i s'/$ramlocation/'"$ramlocation"'/g' ./mccron.sh
 sed -i s'/${mcstartram}/'"$mcstartram"'/g' ./mccron.sh
 sed -i s'/$mcstart/'"$mcstart"'/g' ./mccron.sh
+sed -i s'/ ${synctime}/'" $synctime"'/g' ./mccron.sh
 
 
 echo -e "$(crontab -l)\n@reboot /bin/sh `pwd`/mccron.sh" | crontab -
