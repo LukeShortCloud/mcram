@@ -16,7 +16,7 @@ What directory do you want RAM mounted onto for MC? /ram/
 Your computer has 8192MB of RAM
 What percentage of RAM would you like to use for mounting Minecraft into RAM? (Default is 10): 15
 What amount of RAM (in MB) would you like to use for running Minecraft? (Default is 256): 1024
-Mounting 1228MB of RAM onto /ram/
+Mounting 819MB of RAM onto /ram/
 ```
 
 #### DISCLAIMER
