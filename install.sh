@@ -73,12 +73,13 @@ sed -i s'/$mcstart/'"$mcstart"'/g' ~/mcram/mccron.sh
 sed -i s'/ ${synctime}/'" $synctime"'/g' ~/mcram/mccron.sh
 
 
-if [[ $(type systemctl 2>&1 | grep -c "is hashed") -eq 1 ]];
-	then sed -i s'/$mccronlocation/'"$mccronlocation"'/g' ./mcram.service
+if [[ $(type systemctl 2>&1 | grep -c "not found") -eq 0 ]];
+	then mccronlocation_sedfix=$(echo $mccronlocation | sed 's/\//\\\//g')
+	sed -i s'/$mccronlocation/'"$mccronlocation_sedfix"'/g' ./mcram.service
 	chmod 750 ./mcram.service
 	sudo cp -af ./mcram.service /usr/lib/systemd/system/mcram.service
 	sudo systemctl enable mcram; sudo systemctl start mcram
-elif [[ $(type crontab 2>&1 | grep -c "is hashed") -eq 1 ]];
+elif [[ $(type crontab 2>&1 | grep -c "not found") -eq 0 ]];
 	then echo -e "$(crontab -l)\n@reboot /bin/sh ~/mcram/mccron.sh" | crontab -
 else echo "systemd and crontab are not installed, please install one of these services"
 fi
