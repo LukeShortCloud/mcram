@@ -72,15 +72,14 @@ sed -i s'/${mcstartram}/'"$mcstartram"'/g' ~/mcram/mccron.sh
 sed -i s'/$mcstart/'"$mcstart"'/g' ~/mcram/mccron.sh
 sed -i s'/ ${synctime}/'" $synctime"'/g' ~/mcram/mccron.sh
 
-#FIXME - Finish "Setup systemd"
-#sed -i s'/$mccronlocation/'"$mccronlocation"'/g' ./mcram.service
-#chmod 750 ./mcram.service
-#sudo cp -af ./mcram.service /usr/lib/systemd/system/mcram.service
 
-if [[ $(type crontab 2>&1 | grep -c 'not found') -eq 1 ]];
-	then echo "The crontab service is not installed"
-else 
-	echo -e "$(crontab -l)\n@reboot /bin/sh ~/mcram/mccron.sh" | crontab -
+if [[ $(type crontab 2>&1 | grep -c "is hashed") -eq 1 ]];
+	then echo -e "$(crontab -l)\n@reboot /bin/sh ~/mcram/mccron.sh" | crontab -
+elif [[ $(type systemctl 2>&1 | grep -c "is hashed") -eq 1 ]]
+	sed -i s'/$mccronlocation/'"$mccronlocation"'/g' ./mcram.service
+	chmod 750 ./mcram.service
+	sudo cp -af ./mcram.service /usr/lib/systemd/system/mcram.service
+	sudo systemctl enable mcram; sudo systemctl start mcram
 fi
 
 sudo chmod o+rw /dev/pts/2 #Fixes screen issues when running as the user
