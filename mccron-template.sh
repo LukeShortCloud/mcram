@@ -1,4 +1,4 @@
-#!`which bash`
+#!/bin/sh
 #MCRAM - Cron - mccron.sh
 if [[ ! $(ps faux | grep "$mcstart" | grep java | grep -v grep) ]]
 	then #start server
