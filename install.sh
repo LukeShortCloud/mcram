@@ -75,8 +75,8 @@ sed -i s'/ ${synctime}/'" $synctime"'/g' ~/mcram/mccron.sh
 
 if [[ $(type crontab 2>&1 | grep -c "is hashed") -eq 1 ]];
 	then echo -e "$(crontab -l)\n@reboot /bin/sh ~/mcram/mccron.sh" | crontab -
-elif [[ $(type systemctl 2>&1 | grep -c "is hashed") -eq 1 ]]
-	sed -i s'/$mccronlocation/'"$mccronlocation"'/g' ./mcram.service
+elif [[ $(type systemctl 2>&1 | grep -c "is hashed") -eq 1 ]];
+	then sed -i s'/$mccronlocation/'"$mccronlocation"'/g' ./mcram.service
 	chmod 750 ./mcram.service
 	sudo cp -af ./mcram.service /usr/lib/systemd/system/mcram.service
 	sudo systemctl enable mcram; sudo systemctl start mcram
