@@ -11,7 +11,7 @@ The install will walk you through and help answer your questions to make the con
 
 ### SAMPLE SETUP
 ````
-#sh install.sh
+# sh install.sh
 All dependencies met!
 Please provide full folder paths. For example: /home/myuser/Documents/MC/
 Where is your server located? /home/myuser/games/Minecraft/
