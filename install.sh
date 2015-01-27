@@ -11,7 +11,7 @@ if [[ $(type $req1 2>&1 | grep -c 'not found') -eq 1 ]];
 	then echo "Dependency $(echo $req1) not found. Please install it via your package manager."; exit
 elif [[ $(type $req2 2>&1 | grep -c 'not found') -eq 1 ]]; 	
 	then echo "Dependency $(echo $req2) not found. Please install it via your package manager"; exit
-else echo "All dependencies met"; 
+else echo 'All dependencies met!'; 
 fi
 
 echo 'Please provide full folder paths. For example: /home/myuser/Documents/MC/'
