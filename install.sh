@@ -1,6 +1,6 @@
 #!/bin/sh
 #MCRAM - Installer - installer.sh
-#v0.2 ALPHA
+#v0.2-1 ALPHA
 
 echo -e "\e[1m \e[36m"; #Changes color to light blue 
 
