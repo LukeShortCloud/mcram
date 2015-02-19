@@ -29,3 +29,9 @@ Mounting 204MB of RAM onto /ram/
 
 #### DISCLAIMER
 This program does NOT provide any binaries of the Minecraft game. These must be obtained by Mojang, Microsoft, and/or any other appropriate companies officially associated with the Minecraft brand. All intellectual properties, brands, trandmarks, and/or copyrights are owned by their respective owners/companies.
+
+#### FAQ
+##### Will MCRAM be coming to Windows?
+No. MCRAM currently only supports Linux and BSD distrubutions. MacOSX support is coming soon. The reason for the lack of a Windows version is because, unlike the other operating systems, it is not Unix-based. This means that if a port were made, it would have to be built from scratch. Windows also does not natively provide a way to create "RAM disks" so a third-party tool would nee to be integrated. 
+
+tl;dr It would be too complicated.
