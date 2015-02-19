@@ -13,6 +13,7 @@ echo "Removing RAM mounts..."
 sudo chmod 666 /etc/fstab
 sed -i '/'"$(head -n 1 ~/mcram/mount.uninstall)"'/d'
 sudo chmod 644 /etc/fstab
+sudo mount -a
 
 #Delete MCRAM files
 echo "Removing all MCRAM files..."
