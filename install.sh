@@ -1,5 +1,5 @@
 #!/bin/sh
-#MCRAM - Installer - installer.sh
+#MCRAM - Installer - install.sh
 #v0.2-2 ALPHA
 mcramv="v0.2-2"
 
