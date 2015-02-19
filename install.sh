@@ -1,6 +1,7 @@
 #!/bin/sh
 #MCRAM - Installer - installer.sh
-#v0.2-1 ALPHA
+#v0.2-2 ALPHA
+mcramv="v0.2-2"
 
 echo -e "\e[1m \e[36m"; #Changes color to light blue 
 
@@ -51,6 +52,8 @@ if [[ $(echo $synctime) -eq "" ]];
 fi
 	
 echo "Mounting ${rammb}MB of RAM onto $ramlocation"
+currentdate=$(date +%m-%d-%Y_%Hh.%Mm.%Ss)
+sudo cp -a /etc/fstab /etc/fstab${currentdate}
 sudo chmod 666 /etc/fstab
 echo "tmpfs ${ramlocation} tmpfs defaults,noatime,size=${rammb}M 0 0" >> /etc/fstab; sudo mount -a
 sudo chmod 644 /etc/fstab
@@ -80,13 +83,17 @@ if [[ $(type systemctl 2>&1 | grep -c "not found") -eq 0 ]];
 	sudo cp -af ./mcram.service /usr/lib/systemd/system/mcram.service
 	sudo systemctl enable mcram; sudo systemctl start mcram
 elif [[ $(type crontab 2>&1 | grep -c "not found") -eq 0 ]];
-	then echo -e "$(crontab -l)\n@reboot /bin/sh ~/mcram/mccron.sh" | crontab -
+	then echo -e "$(crontab -l)\n@reboot /bin/sh $HOME/mcram/mccron.sh" | crontab -
 else echo "systemd and crontab are not installed, please install one of these services"
 fi
 
 sudo chmod o+rw /dev/pts/2 #Fixes screen issues when running as the user
 chmod 750 ~/mcram/mccron.sh #Makes the cron executable
+
+echo -e "MCRAM $mcramv has been installed.\nPlease report any problems or suggestions to https://github.com/ekultails/mcram/"
 sh ~/mcram/mccron.sh &
+
+echo "tmpfs ${ramlocation} tmpfs defaults,noatime,size=${rammb}M 0 0" >> ~/mcram/mount.uninstall
 
 echo -e "\e[0;00m"; #Resets the colors
 
@@ -101,6 +108,10 @@ echo -e "\e[0;00m"; #Resets the colors
 #	MacOSX support
 #
 #=-=-=CHANGES SINCE LAST MAJOR RELEASE=-=-=#
+##v0.2-2
+#	Uninstaller created
+#	Bug fix - rsync wasn't always syncing properly; switched arguments for rsync from -varP to -varuP
+#
 ##v0.2
 #	"sudo" is now used for non-root users to install/set-up MCRAM
 #	Added a systemd start-up script "mcram.service"
@@ -113,5 +124,3 @@ echo -e "\e[0;00m"; #Resets the colors
 #	Mounts MC server into memory/RAM
 #	Syncs the server from RAM every hour
 #
-
-
