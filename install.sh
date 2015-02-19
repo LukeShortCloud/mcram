@@ -50,6 +50,20 @@ read -p 'How long (in minutes) do you want to wait for the server to sync to the
 if [[ $(echo $synctime) -eq "" ]]; 
 	then synctime="60"
 fi
+
+if [[ -f /etc/sysctl.conf ]]; then\
+	echo "EXPERIMENTAL. Adjusting the swappiness settings does not work on all systems."
+	echo "Your swappiness level is $(cat /proc/sys/vm/swappiness) out of 100."
+        read -p "The lower the number, the less likely your system and the tmpfs is to use swap. Would you like to adjust this (Y/N)? " answer;
+        if [[ "$answer" == "Y" || "$answer" == "y" ]]; then\
+            read -p "What level number do you want to use? " answer;
+		#Update the system configuration to use this swappiness level after reboots
+		sed -i s/^vm.swappiness/\#vm.swappiness/g /etc/sysctl.conf
+		echo "vm.swappiness=${answer}" >> /etc/sysctl.conf
+		#Apply the new setting now
+		sudo swapoff -a; sudo swapon -a
+        fi
+fi
 	
 echo "Mounting ${rammb}MB of RAM onto $ramlocation"
 currentdate=$(date +%m-%d-%Y_%Hh.%Mm.%Ss)
