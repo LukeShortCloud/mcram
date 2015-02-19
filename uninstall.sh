@@ -11,7 +11,7 @@ screen -S mcram -X quit
 
 echo "Removing RAM mounts..."
 sudo chmod 666 /etc/fstab
-sed -i '/'"$(head -n 1 ~/mcram/mount.uninstall)"'/d'
+sed -i '/'"$(head -n 1 ~/mcram/mount.uninstall)"'/d' /etc/fstab
 sudo chmod 644 /etc/fstab
 sudo mount -a
 
