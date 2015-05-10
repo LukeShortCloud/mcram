@@ -71,11 +71,11 @@ if [[ -f /etc/sysctl.conf ]]; then\
         fi
 fi
 	
-echo "Mounting ${rammb}MB of RAM onto ${ramlocation}"
+echo "Mounting ${mountRam}MB of RAM onto ${ramlocation}"
 currentdate=$(date +%m-%d-%Y_%Hh.%Mm.%Ss)
 sudo cp -a /etc/fstab /etc/fstab${currentdate}
 sudo chmod 666 /etc/fstab
-echo "tmpfs ${ramlocation} tmpfs defaults,noatime,size=${rammb}M 0 0" >> /etc/fstab; sudo mount -a
+echo "tmpfs ${ramlocation} tmpfs defaults,noatime,size=${mountRam}M 0 0" >> /etc/fstab; sudo mount -a
 sudo chmod 644 /etc/fstab
 
 
@@ -113,7 +113,7 @@ chmod 750 ~/mcram/mccron.sh #Makes the cron executable
 echo -e "MCRAM $mcramv has been installed.\nPlease report any problems or suggestions to https://github.com/ekultails/mcram/"
 sh ~/mcram/mccron.sh &
 
-echo "tmpfs ${ramlocation} tmpfs defaults,noatime,size=${rammb}M 0 0" >> ~/mcram/mount.uninstall
+echo "tmpfs ${ramlocation} tmpfs defaults,noatime,size=${mountRam}M 0 0" >> ~/mcram/mount.uninstall
 
 echo -e "\e[0;00m"; #Resets the colors
 
