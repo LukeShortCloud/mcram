@@ -1,7 +1,7 @@
 #!/bin/sh
 #MCRAM - Installer - install.sh
-#v0.2-2 ALPHA
-mcramv="v0.2-2"
+#v0.3-DEV ALPHA
+mcramv="v0.2-3"
 
 echo -e "\e[1m \e[36m"; #Changes color to light blue 
 
@@ -33,16 +33,22 @@ fi
 read -p 'What directory do you want RAM mounted onto for MC? ' ramlocation;
 sudo mkdir -p $ramlocation
 
-echo "Your computer has $(expr $(grep MemTotal /proc/meminfo | awk {'print $2'}) / 1024)MB of RAM"
+availableRam=$(expr $(grep MemTotal /proc/meminfo | awk {'print $2'}) / 1024)
+echo "Your computer has ${availableRam}MB of RAM"
 
-read -p 'What percentage of RAM would you like to use for mounting Minecraft into RAM? (Default is 10): ' rampercentage;
-if [[ $(echo $rampercentage) -eq "" ]]; 
-	then rammb=$(expr $(grep MemTotal /proc/meminfo | awk {'print $2'}) / 1024 \* 10 / 100);
-	else rammb=$(expr $(grep MemTotal /proc/meminfo | awk {'print $2'}) / 1024 \* $rampercentage / 100);
+read -p 'How much RAM (in MB) would you like to use for mounting Minecraft into RAM? (Default is 256): ' mountRam;
+while [[ ${mountRam} -gt ${availableRam} ]];
+	do read -p "Incorrect value. Please pick a value lower than ${availableRam}MB" mountRam;
+done
+if [[ $(echo ${mountRam}) -eq "" ]]; 
+	then mountRam="256"
 fi
 
 read -p 'What amount of RAM (in MB) would you like to use for running Minecraft? (Default is 256): ' mcstartram;
-if [[ $(echo $mcstartram) -eq "" ]]; 
+while [[ ${mcstartram} -gt ${availableRam} ]];
+	do read -p "Incorrect value. Please pick a value lower than ${availableRam}MB" mcstartram;
+done
+if [[ $(echo ${mcstartram}) -eq "" ]]; 
 	then mcstartram="256"
 fi
 
@@ -65,7 +71,7 @@ if [[ -f /etc/sysctl.conf ]]; then\
         fi
 fi
 	
-echo "Mounting ${rammb}MB of RAM onto $ramlocation"
+echo "Mounting ${rammb}MB of RAM onto ${ramlocation}"
 currentdate=$(date +%m-%d-%Y_%Hh.%Mm.%Ss)
 sudo cp -a /etc/fstab /etc/fstab${currentdate}
 sudo chmod 666 /etc/fstab
@@ -114,27 +120,32 @@ echo -e "\e[0;00m"; #Resets the colors
 ###CHANGELOG
 ##FUTURE RELEASE
 #	Automatically install dependencies on Debian, RHEL, and Arch based hosts
-#	Amount of RAM used can be specified in MB
-#	Add check to see if the Minecraft server is larger than RAM allocated
-#	Create an un-installer
 #	Create/enforce strict permissions
 #	Add the ability to automatically generate backups before setting up the server in RAM
 #	MacOSX support
 #
 #=-=-=CHANGES SINCE LAST MAJOR RELEASE=-=-=#
-##v0.2-2
-#	Uninstaller created
-#	Bug fix - rsync wasn't always syncing properly; switched arguments for rsync from -varP to -varuP
+##v0.3-DEV
+#	Implemented:
+#		Uninstaller created
+#		Amount of mounted RAM can is now determined by megabytes instead of a percentage of available RAM
+#	Bug Fix:
+#		rsync wasn't always syncing properly; Switched arguments for rsync from -varP to -varuP
 #
 ##v0.2
-#	"sudo" is now used for non-root users to install/set-up MCRAM
-#	Added a systemd start-up script "mcram.service"
-#	Sync time intervals can now be changed
-#	MCRAM now installs itself to the user's home directory in a folder called "mcram"
-#	"replace" has been replaced with "sed" commands for better compatibility across platforms
+#	Implemented:
+#		"sudo" is now used for non-root sudo users to install/set-up MCRAM
+#		Added a systemd start-up script "mcram.service"
+#		systemd timer unit is used instead of the crontab if systemd is available
+#		Sync time intervals can now be changed
+#		MCRAM now installs itself to the user's home directory in a folder called "mcram"
+#		"replace" has been replaced with "sed" commands for better compatibility across platforms
 #
-##v0.1
-#	Sets up a cron for the Minecraft server to start on boot
-#	Mounts MC server into memory/RAM
-#	Syncs the server from RAM every hour
+##v0.1 ALPHA
+#	Implemented:
+#		Sets up a cron for the Minecraft server to start on boot
+#		Mounts MC server into memory/RAM
+#		Syncs the server from RAM every hour
 #
+
+
