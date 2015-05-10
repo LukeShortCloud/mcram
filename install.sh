@@ -72,8 +72,9 @@ if [[ -f /etc/sysctl.conf ]]; then\
 fi
 	
 echo "Mounting ${mountRam}MB of RAM onto ${ramlocation}"
-currentdate=$(date +%m-%d-%Y_%Hh.%Mm.%Ss)
+currentdate=$(date +%Y-%m-%d_%Hh.%Mm.%Ss)
 sudo cp -a /etc/fstab /etc/fstab${currentdate}
+sudo cp -af /etc/fstab ~/mcram/etc-fstab
 sudo chmod 666 /etc/fstab
 echo "tmpfs ${ramlocation} tmpfs defaults,noatime,size=${mountRam}M 0 0" >> /etc/fstab; sudo mount -a
 sudo chmod 644 /etc/fstab
