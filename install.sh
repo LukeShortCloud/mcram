@@ -1,7 +1,7 @@
 #!/bin/sh
 #MCRAM - Installer - install.sh
 #v0.3-DEV ALPHA
-mcramv="v0.2-3"
+mcramv="v0.2-4"
 
 echo -e "\e[1m \e[36m"; #Changes color to light blue 
 
@@ -132,6 +132,7 @@ echo -e "\e[0;00m"; #Resets the colors
 #		Amount of mounted RAM can is now determined by megabytes instead of a percentage of available RAM
 #	Bug Fix:
 #		rsync wasn't always syncing properly; Switched arguments for rsync from -varP to -varuP
+#		The /etc/fstab is now properly restored from a backup during an uninstall
 #
 ##v0.2
 #	Implemented:
