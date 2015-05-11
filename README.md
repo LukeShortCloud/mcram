@@ -25,7 +25,8 @@ How much RAM (in MB) would you like to use for mounting Minecraft into RAM (defa
 What amount of RAM (in MB) would you like to use for running Minecraft? (Default is 256): 300
 How long (in minutes) do you want to wait for the server to sync to the drive again? (Default is 60): 120
 Mounting 256MB of RAM onto /ram/
-MCRAM v0.3 has been installed.\nPlease report any problems or suggestions 
+MCRAM v0.3 has been installed.
+Please report any problems or suggestions 
 to https://github.com/ekultails/mcram/
 ```
 
