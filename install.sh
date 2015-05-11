@@ -134,6 +134,7 @@ echo -e "\e[0;00m"; #Resets the colors
 #	Bug Fix:
 #		rsync wasn't always syncing properly; Switched arguments for rsync from -varP to -varuP
 #		systemd service installation no longer hangs; the mcram.service is now started detatched in the background
+#		Do not allow memory usage higher than the available systems RAM
 #
 ##v0.2
 #	Implemented:
