@@ -1,7 +1,7 @@
 #!/bin/sh
-#MCRAM - Installer - install.sh
-#v0.3-DEV ALPHA
-mcramv="v0.2-4"
+##MCRAM - Installer - install.sh
+##v0.3 ALPHA
+mcramv="v0.3"
 
 echo -e "\e[1m \e[36m"; #Changes color to light blue 
 
@@ -36,7 +36,7 @@ sudo mkdir -p $ramlocation
 availableRam=$(expr $(grep MemTotal /proc/meminfo | awk {'print $2'}) / 1024)
 echo "Your computer has ${availableRam}MB of RAM"
 
-read -p 'How much RAM (in MB) would you like to use for mounting Minecraft into RAM? (Default is 256): ' mountRam;
+read -p 'How much RAM (in MB) would you like to use for mounting Minecraft into RAM (default is 256)? ' mountRam;
 while [[ ${mountRam} -gt ${availableRam} ]];
 	do read -p "Incorrect value. Please pick a value lower than ${availableRam}MB" mountRam;
 done
@@ -78,8 +78,9 @@ sudo cp -af /etc/fstab ~/mcram/etc-fstab
 sudo chmod 666 /etc/fstab
 echo "tmpfs ${ramlocation} tmpfs defaults,noatime,size=${mountRam}M 0 0" >> /etc/fstab; sudo mount -a
 sudo chmod 644 /etc/fstab
+echo 'Mounts complete!'
 
-
+echo "Setting up the automted MCRAM service now..."
 #Setup the cron
 	#The sed replace commands need an escape character for every directory slash "/" in the bash variables. The below fixes that.
 mclocation_sedfix=$(echo $mclocation | sed 's/\//\\\//g')
@@ -102,19 +103,19 @@ if [[ $(type systemctl 2>&1 | grep -c "not found") -eq 0 ]];
 	sed -i s'/$mccronlocation/'"$mccronlocation_sedfix"'/g' ./mcram.service
 	chmod 750 ./mcram.service
 	sudo cp -af ./mcram.service /usr/lib/systemd/system/mcram.service
-	sudo systemctl enable mcram; sudo systemctl start mcram
+	sudo systemctl enable mcram; sudo systemctl start mcram &
+	mcramJobID=$(jobs | grep "sudo systemctl start mcram" | grep -oP "[0-9][0-9]*")
+	disown %${mcramJobID}
 elif [[ $(type crontab 2>&1 | grep -c "not found") -eq 0 ]];
 	then echo -e "$(crontab -l)\n@reboot /bin/sh $HOME/mcram/mccron.sh" | crontab -
 else echo "systemd and crontab are not installed, please install one of these services"
 fi
 
-sudo chmod o+rw /dev/pts/2 #Fixes screen issues when running as the user
+sudo chmod o+rw /dev/pts/2; sudo chmod 755 /run/screens; #Fixes screen issues when running as the user
 chmod 750 ~/mcram/mccron.sh #Makes the cron executable
 
-echo -e "MCRAM $mcramv has been installed.\nPlease report any problems or suggestions to https://github.com/ekultails/mcram/"
+echo -e "MCRAM ${mcramv} has been installed.\nPlease report any problems or suggestions to https://github.com/ekultails/mcram/"
 sh ~/mcram/mccron.sh &
-
-echo "tmpfs ${ramlocation} tmpfs defaults,noatime,size=${mountRam}M 0 0" >> ~/mcram/mount.uninstall
 
 echo -e "\e[0;00m"; #Resets the colors
 
@@ -126,13 +127,13 @@ echo -e "\e[0;00m"; #Resets the colors
 #	MacOSX support
 #
 #=-=-=CHANGES SINCE LAST MAJOR RELEASE=-=-=#
-##v0.3-DEV
+##v0.3
 #	Implemented:
 #		Uninstaller created
 #		Amount of mounted RAM can is now determined by megabytes instead of a percentage of available RAM
 #	Bug Fix:
 #		rsync wasn't always syncing properly; Switched arguments for rsync from -varP to -varuP
-#		The /etc/fstab is now properly restored from a backup during an uninstall
+#		systemd service installation no longer hangs; the mcram.service is now started detatched in the background
 #
 ##v0.2
 #	Implemented:

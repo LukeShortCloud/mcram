@@ -1,4 +1,4 @@
-#MCRAM v0.2
+#MCRAM v0.3
 
 MCRAM is designed to help run your Minecraft server entirely in RAM on UNIX-based systems. It will set up the automation of starting your server 100% in memory and then saving/syncing it back to your drive occasionally. This helps to improve performance and extend your drive's health and longevity.
 
@@ -21,17 +21,14 @@ spigot-1.8-R0.1-SNAPSHOT.jar
 Which one would you like to use to start your server with? spigot-1.8-R0.1-SNAPSHOT.jar
 What directory do you want RAM mounted onto for MC? /ram/
 Your computer has 2048MB of RAM
-What percentage of RAM would you like to use for mounting Minecraft into RAM? (Default is 10):
+How much RAM (in MB) would you like to use for mounting Minecraft into RAM (default is 256)?
 What amount of RAM (in MB) would you like to use for running Minecraft? (Default is 256): 300
 How long (in minutes) do you want to wait for the server to sync to the drive again? (Default is 60): 120
-Mounting 204MB of RAM onto /ram/
+Mounting 256MB of RAM onto /ram/
+MCRAM v0.3 has been installed.\nPlease report any problems or suggestions 
+to https://github.com/ekultails/mcram/
 ```
 
 #### DISCLAIMER
 This program does NOT provide any binaries of the Minecraft game. These must be obtained by Mojang, Microsoft, and/or any other appropriate companies officially associated with the Minecraft brand. All intellectual properties, brands, trandmarks, and/or copyrights are owned by their respective owners/companies.
 
-#### FAQ
-##### Will MCRAM be coming to Windows?
-No. MCRAM currently only supports Linux and BSD distrubutions. MacOSX support is coming soon. The reason for the lack of a Windows version is because, unlike the other operating systems, it is not Unix-based. This means that if a port were made, it would have to be built from scratch. Windows also does not natively provide a way to create "RAM disks" so a third-party tool would nee to be integrated. 
-
-tl;dr It would be too complicated.

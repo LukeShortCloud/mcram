@@ -3,7 +3,7 @@ Description=MCRAM runs Minecraft fully in RAM
 
 [Service]
 Type=oneshot
-ExecStart=$mccronlocation
+ExecStart=/home/ekultails/mcram/mccron.sh
 
 [Install]
 WantedBy=multi-user.target
