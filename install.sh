@@ -1,7 +1,7 @@
 #!/bin/sh
 ##MCRAM - Installer - install.sh
-##v0.3 ALPHA
-mcramv="v0.3"
+##v0.4 BETA
+mcramv="v0.4"
 
 echo -e "\e[1m \e[36m"; #Changes color to light blue 
 
@@ -71,14 +71,7 @@ if [[ -f /etc/sysctl.conf ]]; then\
         fi
 fi
 	
-echo "Mounting ${mountRam}MB of RAM onto ${ramlocation}"
-currentdate=$(date +%Y-%m-%d_%Hh.%Mm.%Ss)
-sudo cp -a /etc/fstab /etc/fstab${currentdate}
-sudo cp -af /etc/fstab ~/mcram/etc-fstab
-sudo chmod 666 /etc/fstab
-echo "tmpfs ${ramlocation} tmpfs defaults,noatime,size=${mountRam}M 0 0" >> /etc/fstab; sudo mount -a
-sudo chmod 644 /etc/fstab
-echo 'Mounts complete!'
+#currentdate=$(date +%Y-%m-%d_%Hh.%Mm.%Ss)
 
 echo "Setting up the automted MCRAM service now..."
 #Setup the cron
@@ -91,6 +84,7 @@ mkdir ~/mcram/
 
 mccronlocation=$(echo ~/mcram/mccron.sh)
 cp -af ./mccron-template.sh ~/mcram/mccron.sh
+sed -i s'/${mountRam}/'"$mountRam"'/g' ~/mcram/mccron.sh
 sed -i s'/$mclocation/'"$mclocation_sedfix"'/g' ~/mcram/mccron.sh
 sed -i s'/$ramlocation/'"$ramlocation_sedfix"'/g' ~/mcram/mccron.sh
 sed -i s'/${mcstartram}/'"$mcstartram"'/g' ~/mcram/mccron.sh
@@ -124,10 +118,15 @@ echo -e "\e[0;00m"; #Resets the colors
 #	Automatically install dependencies on Debian, RHEL, and Arch based hosts
 #	Create/enforce strict permissions
 #	Add the ability to automatically generate backups before setting up the server in RAM
-#	MacOSX support
 #
 #=-=-=CHANGES SINCE LAST MAJOR RELEASE=-=-=#
-##v0.3
+##0.4 Beta
+#	Implemented:
+#		Mac OSX (Darwin) support
+#	Bug fix:
+#		mounts are now done manually to avoid /etc/fstab issues
+#		
+##0.3
 #	Implemented:
 #		Uninstaller created
 #		Amount of mounted RAM can is now determined by megabytes instead of a percentage of available RAM
@@ -136,7 +135,7 @@ echo -e "\e[0;00m"; #Resets the colors
 #		systemd service installation no longer hangs; the mcram.service is now started detatched in the background
 #		Do not allow memory usage higher than the available systems RAM
 #
-##v0.2
+##0.2
 #	Implemented:
 #		"sudo" is now used for non-root sudo users to install/set-up MCRAM
 #		Added a systemd start-up script "mcram.service"
@@ -145,7 +144,7 @@ echo -e "\e[0;00m"; #Resets the colors
 #		MCRAM now installs itself to the user's home directory in a folder called "mcram"
 #		"replace" has been replaced with "sed" commands for better compatibility across platforms
 #
-##v0.1 ALPHA
+##0.1 Alpha
 #	Implemented:
 #		Sets up a cron for the Minecraft server to start on boot
 #		Mounts MC server into memory/RAM

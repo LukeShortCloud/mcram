@@ -1,6 +1,19 @@
 #!/bin/sh
 #MCRAM - Cron - mccron.sh
-if [[ ! $(ps faux | grep "$mcstart" | grep java | grep -v grep) ]]
+
+if [[ `uname -s` -eq "Darwin" ]];
+        then echo "Mac"
+        # size = INPUT_IN_MB * 1024 * 1024 / 512
+        size=`expr ${mountRam} \* 1024 \* 1024 / 512`
+        tmpPart=`hdid -nomount ram://${size} | grep '/dev/disk'`
+        newfs_hfs ${tmpPart}
+        mkdir -p $ramlocation
+        mount -t hfs ${tmpPart} $ramlocation
+else mkdir -p $ramlocation;\
+        mount -t tmpfs -o defaults,noatime,size=${mountRam}MB tmpfs $ramlocation;
+fi
+
+if [[ ! $(ps aux | grep "$mcstart" | grep java | grep -v grep) ]]
 	then #start server
 		screen -dmS mcram sh; #creates a screen "mc" running bash for the server
 		screen -dmS mcrsync sh; #creates a screen for rsyncing the data
