@@ -1,7 +1,7 @@
 #!/bin/sh
 ##MCRAM - Installer - install.sh
-##v0.4 BETA
-mcramv="v0.4"
+##0.5 BETA
+mcramv="0.5.0"
 
 echo -e "\e[1m \e[36m"; #Changes color to light blue 
 
