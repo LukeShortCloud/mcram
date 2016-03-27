@@ -1,35 +1,69 @@
-import java.util.Scanner; // stdin
 import java.io.File; // file and folder handling
+import java.io.IOException; // I/O error exception handling
+import java.io.PrintWriter;
+import java.util.Scanner; // stdin
 
 class mcramctl {
+    
+    public mcramctl() {
+        //contrusctor 
+    }
+
+	// find the current operating system
+	public static String findOS() {
 	
-	public mcramctl() {
-		//contrusctor 
+		String osName = System.getProperty("os.name");
+		String shortOSName = null;
+		
+		if (osName.toLowerCase().contains("mac")) {
+			shortOSName = "mac";
+		} else if (osName.toLowerCase().contains("linux")) {
+			shortOSName = "linux";
+		} else if (osName.toLowerCase().contains("windows")) {
+			shortOSName = "windows";
+		} else {
+			System.out.println("Unsupported operating system. Exiting...");
+			System.exit(1);
+		}
+		
+		return shortOSName;
 	}
 
-	public static String[] interactiveMode() {
+	public static void writeToFile(String fileName, String text) {
+	
+		try {
+			PrintWriter editor = new PrintWriter(fileName, "UTF-8");
+			editor.println(text);
+			editor.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+	}
+
+    public static String[] interactiveMode() {
 
         // get source directory
-		System.out.println("What folder is your Minecraft server located in?");
-		Scanner sourceScanFolder = new Scanner(System.in); // stdin
-		String sourceFolder = sourceScanFolder.next(); // convert from Scanner to String
+        System.out.println("What folder is your Minecraft server located in?");
+        Scanner sourceScanFolder = new Scanner(System.in); // stdin
+        String sourceFolder = sourceScanFolder.next(); // convert from Scanner to String
         // get destination directory
-		System.out.println("What folder would you like use for mounting the RAM disk?");
-		Scanner destinationScanFolder = new Scanner(System.in); 
-		String destinationFolder = destinationScanFolder.next();
+        System.out.println("What folder would you like use for mounting the RAM disk?");
+        Scanner destinationScanFolder = new Scanner(System.in); 
+        String destinationFolder = destinationScanFolder.next();
         // get size for RAM disk
-		System.out.println("How much RAM (in MB) do you want to use for mounting Minecraft into RAM?");
-		Scanner MBofMountScan = new Scanner(System.in);
-		String MBofMount = MBofMountScan.next();
+        System.out.println("How much RAM (in MB) do you want to use for mounting Minecraft into RAM?");
+        Scanner MBofMountScan = new Scanner(System.in);
+        String MBofMount = MBofMountScan.next();
         // get the amount of RAM that Java should use for running the server
-		System.out.println("How much RAM (in MB) do you want to use for running Minecraft?");
-		Scanner MBofRunScan = new Scanner(System.in);
-		String MBofRun = MBofRunScan.next();
+        System.out.println("How much RAM (in MB) do you want to use for running Minecraft?");
+        Scanner MBofRunScan = new Scanner(System.in);
+        String MBofRun = MBofRunScan.next();
 
-		String[] interactiveAnswers = {sourceFolder, destinationFolder, MBofMount, MBofRun};	
+        String[] interactiveAnswers = {sourceFolder, destinationFolder, MBofMount, MBofRun};    
         return interactiveAnswers;
 
-	}
+    }
 
     public static void help() {
 
@@ -44,35 +78,67 @@ class mcramctl {
 
     }
 
-	public static void main(String args[]) {
+    public static void main(String args[]) {
 
-		mcramctl mcramObj = new mcramctl(); // create an object
-
-        // sort through the command line arguments given
-        for (String arg : args) {
-
-            switch (arg) {
-                case "--help":
-                case "-h":
-                    mcramObj.help();
-                    break;
-                case "--verbose":  
-                case "-v":
-                    System.out.println("MCRAM version: 1.0.0-dev");
-                    break;
-                default:
-                    break;
-            }
-
-        }
+        mcramctl mcramObj = new mcramctl(); // create an object
+        
+		// initiate variables that will be needed later
+		String sourceDir = null;
+		String destinationDir = null;
+		String runRAM = null;
+		String mountRAM = null;
+		String shortOSName = mcramObj.findOS();
 
         // only run the interactive mode if no commands are given
-		if (args.length == 0) {
+        if (args.length == 0) 
+        {
             String interactiveAnswers[] = mcramObj.interactiveMode();
-        }
+        } 
+        else 
+        {
+            // sort through the command line arguments given
+            for (int counter = 0; counter < args.length; counter++) 
+            {
+                switch (args[counter]) {
+					case "--destination-dir":
+                    case "--dd":
+						destinationDir = args[counter + 1];
+						counter++;
+						break;
+                    case "--help":
+                    case "-h":
+                        mcramObj.help();
+                        break;
+                    case "--mount-ram":
+                    case "-mr":
+						mountRAM = args[counter + 1];
+						counter++;
+						break;
+                    case "--run-ram":
+                    case "-rr":
+						runRAM = args[counter + 1];
+						counter++;
+						break;
+                    case "--source-dir":
+                    case "--sd":
+						sourceDir = args[counter + 1];
+						counter++;
+						break;
+                    case "--verbose":  
+                    case "-v":
+                        System.out.println("MCRAM version: 1.0.0-dev");
+                        break;
+                    default:
+                        break;
+                }
 
+            }
+            
+            String fileName = "/tmp/mcramd.sock";
+            String text = "test";
+            mcramObj.writeToFile(fileName, text);
+            
+        }
 	}
 
-
-
-}
+} 
