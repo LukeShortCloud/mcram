@@ -11,35 +11,35 @@ class Mcramctl {
         //contrusctor 
     }
 
-	// find the current operating system
-	public static String findOS() 
-	{	
-		String osName = System.getProperty("os.name");
-		String shortOSName = null;
-		
-		if (osName.toLowerCase().contains("mac")) {
-			shortOSName = "mac";
-		} else if (osName.toLowerCase().contains("linux")) {
-			shortOSName = "linux";
-		} else if (osName.toLowerCase().contains("windows")) {
-			shortOSName = "windows";
-		} else {
-			System.out.println("Unsupported operating system. Exiting...");
-			System.exit(1);
-		}	
-		return shortOSName;
-	}
+    // find the current operating system
+    public static String findOS() 
+    {   
+        String osName = System.getProperty("os.name");
+        String shortOSName = null;
+        
+        if (osName.toLowerCase().contains("mac")) {
+            shortOSName = "mac";
+        } else if (osName.toLowerCase().contains("linux")) {
+            shortOSName = "linux";
+        } else if (osName.toLowerCase().contains("windows")) {
+            shortOSName = "windows";
+        } else {
+            System.out.println("Unsupported operating system. Exiting...");
+            System.exit(1);
+        }   
+        return shortOSName;
+    }
 
-	public static void writeToFile(String fileName, String text) 
-	{
-		try {
-			PrintWriter editor = new PrintWriter(fileName, "UTF-8");
-			editor.println(text);
-			editor.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}	
-	}
+    public static void writeToFile(String fileName, String text) 
+    {
+        try {
+            PrintWriter editor = new PrintWriter(fileName, "UTF-8");
+            editor.println(text);
+            editor.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }   
+    }
 
     public static String[] interactiveMode() 
     {
@@ -78,15 +78,16 @@ class Mcramctl {
 
     public static void main(String args[]) 
     {
+		
         Mcramctl mcramctl = new Mcramctl(); // create an object      
-		// initiate variables that will be needed later
-		String sourceDir = null;
-		String destinationDir = null;
-		String cmd = null;
-		String runRAM = null;
-		String mountRAM = null;
-		String shortOSName = mcramctl.findOS();
-		String[] startCheck = null;
+        // initiate variables that will be needed later
+        String sourceDir = null;
+        String destinationDir = null;
+        String cmd = null;
+        String runRAM = null;
+        String mountRAM = null;
+        String shortOSName = mcramctl.findOS();
+        String[] startCheck = null;
 
         // only run the interactive mode if no commands are given
         if (args.length == 0) 
@@ -100,35 +101,35 @@ class Mcramctl {
             {
                 switch (args[counter]) 
                 {
-					case "--destination-dir":
+                    case "--destination-dir":
                     case "--dd":
-						destinationDir = args[counter + 1];
-						counter++;
-						break;
-					case "--execute":
+                        destinationDir = args[counter + 1];
+                        counter++;
+                        break;
+                    case "--execute":
                     case "-e":
-						cmd = args[counter + 1];
-						counter++;
-						break;
+                        cmd = args[counter + 1];
+                        counter++;
+                        break;
                     case "--help":
                     case "-h":
                         mcramctl.help();
                         break;
                     case "--mount-ram":
                     case "-mr":
-						mountRAM = args[counter + 1];
-						counter++;
-						break;
+                        mountRAM = args[counter + 1];
+                        counter++;
+                        break;
                     case "--run-ram":
                     case "-rr":
-						runRAM = args[counter + 1];
-						counter++;
-						break;
+                        runRAM = args[counter + 1];
+                        counter++;
+                        break;
                     case "--source-dir":
                     case "--sd":
-						sourceDir = args[counter + 1];
-						counter++;
-						break;
+                        sourceDir = args[counter + 1];
+                        counter++;
+                        break;
                     case "--verbose":  
                     case "-v":
                         System.out.println("MCRAM version: 1.0.0-dev");
@@ -139,42 +140,47 @@ class Mcramctl {
             }
             
             String fileName = "/tmp/mcramd.sock";
-			
-			// "mcramd:stop" = TBD
-			//
-			// "mcramd:exec" = exec a command on the server
-			// Example: mcramd:exec,say Hello Minecraft World!
-			
-			String text = null;
-			
-			if (cmd == null) 
-			{
-				// seperate our command string by commas "," for 
-				// mcramd to process through
-				text = ("mcramd:start" + "," + destinationDir +
-					    "," + mountRAM + "," + sourceDir + "," +
-					    runRAM + "," + shortOSName);
-				// "mcramd:start" = start Minecraft server
-				// full mcramd:start options:
-				// (1) <mount_directory>, (2) <tmpfs_size_in_MB>, 
-				// (3) <source_directory>, (4) <java_RAM_exec_size_in_MB>,
-				// (5) <operating_system_name>
-				// Example: 
-				// mcramd:start,/tmpfs,512,/home/user/mc_server,1024,linux
+            
+            // "mcramd:stop" = TBD
+            //
+            // "mcramd:exec" = exec a command on the server
+            // Example: mcramd:exec,say Hello Minecraft World!
+            
+            String text = null;
+            
+            if (cmd == null) 
+            {
+                // seperate our command string by commas "," for 
+                // mcramd to process through
+                text = ("mcramd:start" + "," + destinationDir +
+                        "," + mountRAM + "," + sourceDir + "," +
+                        runRAM + "," + shortOSName);
+                // "mcramd:start" = start Minecraft server
+                // full mcramd:start options:
+                // (1) <mount_directory>, (2) <tmpfs_size_in_MB>, 
+                // (3) <source_directory>, (4) <java_RAM_exec_size_in_MB>,
+                // (5) <operating_system_name>
+                // Example: 
+                // mcramd:start,/tmpfs,512,/home/user/mc_server,1024,linux
+                // OR
+                // mcramd:start,C:/ramdisk,1024,C:/Users/Steve/server/,1024,windows
             }
             else 
             {
-				text = cmd;
-			}
-			
-			if (text.contains(",null")) 
-			{
-				System.out.println("Required option(s) are missing " +
-								   "from string:");
-				System.out.println(text);
-				System.exit(1);	
-			}		
+                text = cmd;
+            }
+            
+            if (text.contains(",null")) 
+            {
+                System.out.println("Required option(s) are missing " +
+                                   "from string:");
+                System.out.println(text);
+                System.exit(1); 
+            }       
             mcramctl.writeToFile(fileName, text);
         }
-	}
+    
+    	Mcramd.main(args); // execute the MCRAM daemon class
+
+    }
 } 
