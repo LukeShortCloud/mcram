@@ -1,4 +1,4 @@
-#MCRAM 1.0.0-dev
+#MCRAM 1.0.0-dev (alpha)
 
 Dependencies: Java 7+ (Java 8 recommended)
 Support Operating Systems: Linux, MacOXS, Windows

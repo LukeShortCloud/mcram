@@ -68,10 +68,11 @@ class Mcramctl {
     {
         System.out.printf("mcramctl options\n" + 
                           "\t--help, -h\tdisplay these help options\n" +
-                          "\t--source-dir, -sd\tprovide the Minecraft server directory to sync\n" +
+                          "\t--source-dir, -sd\tprovide the full path to the Minecraft server\'s jar file\n" +
                           "\t--destination-dir, -dd\tprovide an empty directory to mount a RAM disk onto\n" +
                           "\t--run-ram, -rr\tspecify (in MB) the amount of RAM to run the Minecraft server\n" +
                           "\t--mount-ram, -mr\tspecify (in MB) the amount of RAM to use for mounting the RAM disk\n" +
+                          "\t--sync-time, -st\tset how long to wait before syncing the server back to the disk\n" +
                           "\t--version, -v\tshow current MCRAM version\n");
                           // "--quiet, -q\tsurpress output\n");
     }
@@ -86,6 +87,7 @@ class Mcramctl {
         String cmd = null;
         String runRAM = null;
         String mountRAM = null;
+        String syncTime = "0";
         String shortOSName = mcramctl.findOS();
         String[] startCheck = null;
 
@@ -102,7 +104,7 @@ class Mcramctl {
                 switch (args[counter]) 
                 {
                     case "--destination-dir":
-                    case "--dd":
+                    case "-dd":
                         destinationDir = args[counter + 1];
                         counter++;
                         break;
@@ -126,10 +128,13 @@ class Mcramctl {
                         counter++;
                         break;
                     case "--source-dir":
-                    case "--sd":
+                    case "-sd":
                         sourceDir = args[counter + 1];
                         counter++;
                         break;
+                    case "--sync-time":
+                    case "-st":
+                        syncTime = args[counter + 1];
                     case "--verbose":  
                     case "-v":
                         System.out.println("MCRAM version: 1.0.0-dev");
@@ -139,7 +144,7 @@ class Mcramctl {
                 }
             }
             
-            String fileName = "/tmp/mcramd.sock";
+            String socketFile = "/tmp/mcramd.sock";
             
             // "mcramd:stop" = TBD
             //
@@ -154,12 +159,13 @@ class Mcramctl {
                 // mcramd to process through
                 text = ("mcramd:start" + "," + destinationDir +
                         "," + mountRAM + "," + sourceDir + "," +
-                        runRAM + "," + shortOSName);
+                        runRAM + "," + "syncTime:" +
+                        syncTime + "," + shortOSName);
                 // "mcramd:start" = start Minecraft server
                 // full mcramd:start options:
                 // (1) <mount_directory>, (2) <tmpfs_size_in_MB>, 
                 // (3) <source_directory>, (4) <java_RAM_exec_size_in_MB>,
-                // (5) <operating_system_name>
+                // (5) <sync_time>, (6) <operating_system_name>
                 // Example: 
                 // mcramd:start,/tmpfs,512,/home/user/mc_server,1024,linux
                 // OR
@@ -177,7 +183,7 @@ class Mcramctl {
                 System.out.println(text);
                 System.exit(1); 
             }       
-            mcramctl.writeToFile(fileName, text);
+            mcramctl.writeToFile(socketFile, text);
         }
     
     	Mcramd.main(args); // execute the MCRAM daemon class

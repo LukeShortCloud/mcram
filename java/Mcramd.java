@@ -34,6 +34,7 @@ class Mcramd {
                                     // we enter the try/catch statement
     
         try {
+            // this will read the first/top line only
             returnSocket = fileBufferReader.readLine();
         } catch (IOException e) {
             e.printStackTrace();
@@ -58,8 +59,8 @@ class Mcramd {
 
     public static void mountRAMLinux(String mountRAM, String destinationDir) 
     {
-        String mountCmd = ("mount -t tmpfs -o defaults,noatime,size=" +
-                          mountRAM + "M tmpfs " + destinationDir);
+        String mountCmd = ("mount -t ramfs -o defaults,noatime,size=" +
+                          mountRAM + "M ramfs " + destinationDir);
         File runDir = new File("/tmp");
         execCmd(mountCmd, runDir);
     }
@@ -85,8 +86,10 @@ class Mcramd {
     }
 
     // copy files
-    public static void cp(String dst_dir, File[] listOfFiles) throws IOException  
+    public static void cp(String src_dir, String dst_dir) throws IOException  
     {
+        File[] listOfFiles = dir(src_dir);
+        
         for(File filename : listOfFiles) 
         {
             Path src_file = filename.toPath();
@@ -140,20 +143,6 @@ class Mcramd {
 		serverStarted = true;
 	}
 
-    // "synchronized" makes this thread safe
-    // i.e., only one thread at a time can run this
-    // if another thread calls this method, it will be queued
-   /* public synchronized Process mcExec(String runDirString)
-    {
-		Process p = null;
-        String runCmd = (java_binary +
-                         " -jar " + runDirString +
-                         " minecraft_server.1.9.jar --nogui");
-        File runDirFile = new File("/Users/Kylo/mc/");
-        MinecraftServer = this.execCmd(runCmd, runDirString);
-        return MinecraftServer;
-    } */
-
     public static void main(String[] args) 
     {
 		// we will be creating two background threads
@@ -177,54 +166,133 @@ class Mcramd {
                     String destinationdir = "/ram";
                    // mcramd.mountRAMLinux(mountram, destinationdir);
                     
-                    String sockContent = mcramd.readSock("/tmp/mcramd.sock");
-                    String[] sockSplit = sockContent.split(",");
-                    for (String value : sockSplit) {
-                        System.out.println(value);
-                    }
-                    
-                    // this will save the running Minecraft server
-                    String command = "say hello"; 
-                    // Minecraft needs to be run from the directory that the eula.txt is in
-                    // this is where the minecraft_server*.jar should exist
-                    //runDir = new File("C:/path/to/minecraft/server/");
-                    String runDir = "/Users/Kylo/mc/";
-                    String mcJar = "minecraft_server.1.9.2.jar";
-                    String javaExecRAM = "512";
-                    
-                    mcramd.startMinecraftServer(runDir, mcJar, javaExecRAM);
-                    
-                    int count = 1;
+                    // this socket is valid for Linux and Mac only
+                    String socket = "/tmp/mcramd.sock"; 
+                    String socketText = mcramd.readSock(socket);
+                    String[] sockSplit = socketText.split(",");
 
-                    while (count < 5) 
+                    // read the socket until it recieves the start command
+                    while (sockSplit[0].contains("mcramd:start") == false)
                     {
-						 mcramd.stdin(MinecraftServer, command);
-
+                        socketText = mcramd.readSock(socket);
+                        sockSplit = socketText.split(",");
+                        
                         try {
-                            TimeUnit.SECONDS.sleep(10);
+                            TimeUnit.SECONDS.sleep(1);
                         } catch(InterruptedException e) {
                             e.printStackTrace();
-                        }
-                       
-                        count++;
-                        
+                        }                        
                     }
-                    /* example copy below:
-                    String dirname = "/tmp/tmp1/";
-                    File[] listOfFiles = dir(dirname);
-                    String dir2 = "/tmp/tmp2/";
+                    
+                    // full mcramd:start options:
+                    // (1) <mount_directory>, (2) <tmpfs_size_in_MB>, 
+                    // (3) <source_directory>, (4) <java_RAM_exec_size_in_MB>,
+                    // (5) <sync_time>, (6) <operating_system_name>
+                    String minecraftFullJarPath = sockSplit[3];
+                    String destinationDir = sockSplit[1];
+                    String[] syncTime = sockSplit[5].split(":");
+                    // extract the syncing time (in minutes) variable
+                    // and convert it to an integer
+                    int syncTimeInt = Integer.parseInt(syncTime[1]);
+                    
+                    if ( ! minecraftFullJarPath.endsWith(".jar")) 
+                    {
+                        System.out.println("No jar file provided.");
+                        System.exit(1); 
+                    }
+                    
+                    String[] minecraftFullJarPathSplit = minecraftFullJarPath.split("/");
+                    // grab the last part of the split which should be
+                    // the Minecraft server jar file
+                    String minecraftJar = minecraftFullJarPathSplit[minecraftFullJarPathSplit.length - 1];
+                    String sourceDir = null;
+                    
+                    // get the full path to the Minecraft server's directory;
+                    // it should be each value in the array besides the last one
+                    for (int count = 0; count < minecraftFullJarPathSplit.length - 1; count++)
+                    {
+                        if (count == 0)
+                        {
+                            // the first entry should not start with
+                            // a "/"
+                            sourceDir = minecraftFullJarPathSplit[count];
+                        } else {
+                            sourceDir = sourceDir + "/" + minecraftFullJarPathSplit[count];
+                        }
+                    }
+                                        
+                    String mountRAM = sockSplit[2];
+                    String javaExecRAM = sockSplit[4];
+                    
+                    if (sockSplit[6].contains("linux")) 
+                    {
+                        mountRAMLinux(mountRAM, destinationDir);
+                    } else if (sockSplit[6].contains("mac")) {
+                        System.out.println("Stub");
+                        System.exit(1);
+                    } else if (sockSplit[6].contains("windows")) {
+                        System.out.println("Stub");
+                        System.exit(1);
+                    } else {
+                        System.out.println("Unsupported operating system.");
+                        System.exit(1);
+                    }
+                    
+                    // copy the files into the mounted RAM disk
                     try {
-                        cp(dir2, listOfFiles);
+                        cp(sourceDir, destinationDir);
                     } catch(IOException e){
                         e.printStackTrace();
                     }
-                    */
+                    
+                    // finally, we start the Minecraft server
+                    mcramd.startMinecraftServer(destinationDir, minecraftJar, javaExecRAM);
+                
+                    // 0 means MCRAM will not sync the server back to the disk
+                    if (syncTimeInt != 0)
+                    {
+                        String command = null;
                         
-                        //mcramd.stdin(mc_server, command); 
+                        while (true)
+                        {
+                            // save the server
+                            stdin(MinecraftServer, "save all");
+                            
+                            try {
+                                TimeUnit.SECONDS.sleep(1);
+                            } catch(InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                            
+                            // stop the saving to avoid corruption
+                            stdin(MinecraftServer, "save-off");
+                            
+                            try {
+                                TimeUnit.SECONDS.sleep(1);
+                            } catch(InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                            
+                            // copy the server back from RAM to the disk
+                            try {
+                                cp(destinationDir, sourceDir);
+                            } catch(IOException e){
+                                e.printStackTrace();
+                            }
+                            
+                            // finally, turn saving back on again
+                            stdin(MinecraftServer, "save-on");
+                            stdin(MinecraftServer, "say debug saving works");
+                    
+                            // wait this long before starting the loop again
+                            try {
+                                TimeUnit.MINUTES.sleep(syncTimeInt);
+                            } catch(InterruptedException e) {
+                                e.printStackTrace();
+                            }
 
-                   // command = "stop"; // finally, stop the server after testing
-                    //mcramd.stdin(mc_server, command);   
-                             
+                        }
+                    }
             } 
 		}; // end of the first Runnable thread method
 		
@@ -247,10 +315,10 @@ class Mcramd {
 									break;	
 								}									
 							}
-							int count = 1;
+
 							String command = "say world, thread 2"; 
 							
-							while (count < 5) 
+							for (int count = 1; count < 5; count++) 
                     		{
 						 		stdin(MinecraftServer, command);
 
@@ -259,7 +327,6 @@ class Mcramd {
                         		} catch(InterruptedException e) {
                             		e.printStackTrace();
                         		}
-                        count++;
                         
                     }
                          
