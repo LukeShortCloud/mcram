@@ -4,9 +4,9 @@ import java.io.IOException; // I/O error exception handling
 import java.io.PrintWriter;
 import java.util.Scanner; // stdin
 
-class Mcramctl {
+class mcramctl {
     
-    public Mcramctl() 
+    public mcramctl() 
     {
         //contrusctor 
     }
@@ -77,10 +77,9 @@ class Mcramctl {
                           // "--quiet, -q\tsurpress output\n");
     }
 
-    public static void main(String args[]) 
-    {
+    public static void main(String args[]) {
 		
-        Mcramctl mcramctl = new Mcramctl(); // create an object      
+        mcramctl mcramctl = new mcramctl(); // create an object      
         // initiate variables that will be needed later
         String sourceDir = null;
         String destinationDir = null;
@@ -92,17 +91,14 @@ class Mcramctl {
         String[] startCheck = null;
 
         // only run the interactive mode if no commands are given
-        if (args.length == 0) 
-        {
+        if (args.length == 0) {
             String interactiveAnswers[] = mcramctl.interactiveMode();
         } 
-        else 
-        {
+        else {
             // sort through the command line arguments given
-            for (int counter = 0; counter < args.length; counter++) 
-            {
-                switch (args[counter]) 
-                {
+            for (int counter = 0; counter < args.length; counter++) {
+                
+                switch (args[counter]) {
                     case "--destination-dir":
                     case "-dd":
                         destinationDir = args[counter + 1];
@@ -116,7 +112,7 @@ class Mcramctl {
                     case "--help":
                     case "-h":
                         mcramctl.help();
-                        break;
+                        System.exit(0);
                     case "--mount-ram":
                     case "-mr":
                         mountRAM = args[counter + 1];
@@ -138,7 +134,7 @@ class Mcramctl {
                     case "--verbose":  
                     case "-v":
                         System.out.println("MCRAM version: 1.0.0-dev");
-                        break;
+                        System.exit(0);
                     default:
                         break;
                 }

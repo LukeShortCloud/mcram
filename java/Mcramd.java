@@ -12,9 +12,9 @@ import java.util.Scanner;
 class Mcramd {
 
     public static Process MinecraftServer = null;
-	public static String java_binary = System.getProperty("java.home") +
-									   "/bin/java";
-	public static boolean serverStarted = false;
+    public static String java_binary = System.getProperty("java.home") +
+                                       "/bin/java";
+    public static boolean serverStarted = false;
 
     public static String readSock(String fileName) {
     
@@ -41,67 +41,87 @@ class Mcramd {
         }
 
         return returnSocket;
-        
     }
 
-    public static void mountRAMMac(String mountRAM, String destinationDir) 
-    {
-		// convert from MB to block size;
-		// more specifically, convert to kilobytes then bytes and finally
-		// divide by bytes in 1 RAM sector (512) 
-		// to get the total number of sectors
+    public static void mountRAMMac(String mountRAM, String destinationDir) {
+        // convert from MB to block size;
+        // more specifically, convert to kilobytes then bytes and finally
+        // divide by bytes in 1 RAM sector (512) 
+        // to get the total number of sectors
         int mountRAMSectors = Integer.parseInt(mountRAM) * 1024 * 1024 / 512;
         String mountCmd = ("hdiutil attach -nomount ram://" + 
-        				   Integer.toString(mountRAMSectors));
+                           Integer.toString(mountRAMSectors));
         File runDir = new File("/tmp");
         execCmd(mountCmd, runDir);
     }
 
-    public static void mountRAMLinux(String mountRAM, String destinationDir) 
-    {
+    public static void mountRAMLinux(String mountRAM, String destinationDir) {
         String mountCmd = ("mount -t ramfs -o defaults,noatime,size=" +
                           mountRAM + "M ramfs " + destinationDir);
         File runDir = new File("/tmp");
         execCmd(mountCmd, runDir);
     }
     
-    public static void mountRAMWindows() 
-    {
+    public static void mountRAMWindows() {
         System.out.println("Stub");
         
     }
 
     // return the contents of a directory
-    public static File[] dir(String dirname) 
-    {
-        // initate a File-type variable that can be used to get the contents of a directory
-        File directory = new File(dirname);
-        File[] listOfFiles = directory.listFiles();
-        
-        for (File file: listOfFiles)
-        {
-            System.out.println(file.getName());
-        }
+    public static File[] dir(File dirname) {
+        File[] listOfFiles = dirname.listFiles();
         return listOfFiles;
     }
 
-    // copy files
-    public static void cp(String src_dir, String dst_dir) throws IOException  
-    {
-        File[] listOfFiles = dir(src_dir);
+    // copy files and folders recursively
+    public static void cp(File src_dir, File dst_dir) throws IOException {
+        Path src_file = null;
+        Path dst_file = null;    
         
-        for(File filename : listOfFiles) 
-        {
-            Path src_file = filename.toPath();
-            Path dst_file = new File(dst_dir + filename.getName()).toPath();
-            //Files.copy(src_file, dst_file, StandardCopyOption.REPLACE_EXISTING);
-            Files.copy(src_file, dst_file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
+        if ((! src_dir.isDirectory() && ! dst_dir.isDirectory())) {
+            Files.copy(src_dir.toPath(), dst_dir.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
+        } else if (src_dir.isDirectory())   {
+            
+            if (! Files.exists(dst_dir.toPath())) {
+                Files.copy(src_dir.toPath(), dst_dir.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            }
+            
+            File[] listOfFiles = dir(src_dir);
+   
+            for(File filename : listOfFiles) {
+                src_file = filename.toPath();
+                dst_file = new File(dst_dir.getAbsolutePath() + "/" +  filename.getName()).toPath();
+
+                if (filename.isDirectory()) {
+                
+                // copy the directory and it's attributes
+                if (! Files.exists(dst_file)) {
+                    Files.copy(src_file, dst_file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
+                }
+                
+                File[] subDir = dir(filename);
+                    
+                    // copy the sub directories
+                    for(File filetmp : subDir) {
+                    
+                        // create the new source and destination file names
+                        // for the sub directories
+                        File src_subFile = new File(src_dir.getAbsolutePath() + "/" + filename.getName() +
+                                                "/" + filetmp.getName());
+                        File dst_subFile = new File(dst_dir.getAbsolutePath() + "/" + filename.getName() + 
+                                                    "/" + filetmp.getName());
+                        // copy the sub directory and it's contents (inception!)
+                        cp(src_subFile, dst_subFile);
+                    } 
+                } else {
+                    Files.copy(src_file, dst_file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
+                }       
+            }
         }
     }
     
     // send standard input to a process
-    public static void stdin(Process p, String command) 
-    {
+    public static void stdin(Process p, String command) {
         // a Scanner is used to push standard input to the process   
         Scanner stdin_scanner = new Scanner(System.in);
         PrintWriter stdin = new PrintWriter(MinecraftServer.getOutputStream());
@@ -125,35 +145,28 @@ class Mcramd {
         return p;
     }
 
-	public static void startMinecraftServer(String runDir, String mcJar, String javaExecRAM)
-	{
-		// Example variables:
-		// String runDirString = "/Users/Kylo/mc/";
-		// String mcJar = "minecraft_server.1.9.jar";
-		//
-		// Minecraft needs to be run from the directory that the eula.txt is in
+    public static void startMinecraftServer(String runDir, String mcJar, String javaExecRAM) {
+        
+        // Minecraft needs to be run from the directory that the eula.txt is in
         // this is where the minecraft_server*.jar should exist
         File runDirFile = new File(runDir);
-        // the command should end up looking similar to this:
+        // the "runCmd" variable should end up looking similar to this:
         // java -Xmx1024M -Xms1024M -jar minecraft_server.jar nogui
         String runCmd = (java_binary + " -Xmx" + javaExecRAM + "M -Xms" + 
-        				 javaExecRAM + "M -jar " + mcJar + " nogui");
+                         javaExecRAM + "M -jar " + mcJar + " nogui");
         System.out.println("deubg - runCmd: " + runCmd);
-		MinecraftServer = execCmd(runCmd, runDirFile);
-		serverStarted = true;
-	}
+        MinecraftServer = execCmd(runCmd, runDirFile);
+        serverStarted = true;
+    }
 
-    public static void main(String[] args) 
-    {
-		// we will be creating two background threads
-		//
-		// 1st thread
-		// start the Minecraft server and 
-		// sync it back to the disk over a specified amount of time
-        Runnable startAndSync = new Runnable() 
-        {
-            public void run() 
-            {
+    public static void main(String[] args) {
+        // we will be creating two background threads
+        //
+        // 1st thread
+        // start the Minecraft server and 
+        // sync it back to the disk over a specified amount of time
+        Runnable startAndSync = new Runnable() {
+            public void run() {
                 // initalize the object from our class
                 Mcramd mcramd = new Mcramd();
                     
@@ -162,182 +175,171 @@ class Mcramd {
                //  String runCmd = (java_prefix + "/bin/java" + 
                 //                 " -jar C:/path/to/minecraft/server/minecraft_server.1.9.jar");
                
-                    String mountram = "512";
-                    String destinationdir = "/ram";
-                   // mcramd.mountRAMLinux(mountram, destinationdir);
                     
-                    // this socket is valid for Linux and Mac only
-                    String socket = "/tmp/mcramd.sock"; 
-                    String socketText = mcramd.readSock(socket);
-                    String[] sockSplit = socketText.split(",");
+                // this socket is valid for Linux and Mac only
+                String socket = "/tmp/mcramd.sock"; 
+                String socketText = mcramd.readSock(socket);
+                String[] sockSplit = socketText.split(",");
 
-                    // read the socket until it recieves the start command
-                    while (sockSplit[0].contains("mcramd:start") == false)
+                // read the socket until it recieves the start command
+                while (sockSplit[0].contains("mcramd:start") == false) {
+                    socketText = mcramd.readSock(socket);
+                    sockSplit = socketText.split(",");
+                    
+                    try {
+                        TimeUnit.SECONDS.sleep(1);
+                    } catch(InterruptedException e) {
+                        e.printStackTrace();
+                    }                        
+                }
+                
+                // full mcramd:start options:
+                // (1) <mount_directory>, (2) <tmpfs_size_in_MB>, 
+                // (3) <source_directory>, (4) <java_RAM_exec_size_in_MB>,
+                // (5) <sync_time>, (6) <operating_system_name>
+                String minecraftFullJarPath = sockSplit[3];
+                String destinationDir = sockSplit[1];
+                String[] syncTime = sockSplit[5].split(":");
+                // extract the syncing time (in minutes) variable
+                // and convert it to an integer
+                int syncTimeInt = Integer.parseInt(syncTime[1]);
+                
+                if ( ! minecraftFullJarPath.endsWith(".jar")) {
+                    System.out.println("No jar file provided.");
+                    System.exit(1); 
+                }
+                
+                String[] minecraftFullJarPathSplit = minecraftFullJarPath.split("/");
+                // grab the last part of the split which should be
+                // the Minecraft server jar file
+                String minecraftJar = minecraftFullJarPathSplit[minecraftFullJarPathSplit.length - 1];
+                String sourceDir = null;
+                
+                // get the full path to the Minecraft server's directory;
+                // it should be each value in the array besides the last one
+                for (int count = 0; count < minecraftFullJarPathSplit.length - 1; count++) {
+                    if (count == 0) {
+                        // the first entry should not start with
+                        // a "/"
+                        sourceDir = minecraftFullJarPathSplit[count];
+                    } else {
+                        sourceDir = sourceDir + "/" + minecraftFullJarPathSplit[count];
+                    }
+                }
+                                    
+                String mountRAM = sockSplit[2];
+                String javaExecRAM = sockSplit[4];
+                
+                if (sockSplit[6].contains("linux")) {
+                    mountRAMLinux(mountRAM, destinationDir);
+                } else if (sockSplit[6].contains("mac")) {
+                    System.out.println("Stub");
+                    System.exit(1);
+                } else if (sockSplit[6].contains("windows")) {
+                    System.out.println("Stub");
+                    System.exit(1);
+                } else {
+                    System.out.println("Unsupported operating system.");
+                    System.exit(1);
+                }
+                
+                // copy the files into the mounted RAM disk
+                try {
+                    cp(new File(sourceDir), new File(destinationDir));
+                } catch(IOException e){
+                    e.printStackTrace();
+                }
+                
+                // finally, we start the Minecraft server
+                mcramd.startMinecraftServer(destinationDir, minecraftJar, javaExecRAM);
+            
+                // 0 means MCRAM will not sync the server back to the disk
+                if (syncTimeInt != 0) {
+                    String command = null;
+                    
+                    while (true)
                     {
-                        socketText = mcramd.readSock(socket);
-                        sockSplit = socketText.split(",");
+                        // save the server
+                        stdin(MinecraftServer, "save all");
                         
                         try {
                             TimeUnit.SECONDS.sleep(1);
                         } catch(InterruptedException e) {
                             e.printStackTrace();
-                        }                        
-                    }
-                    
-                    // full mcramd:start options:
-                    // (1) <mount_directory>, (2) <tmpfs_size_in_MB>, 
-                    // (3) <source_directory>, (4) <java_RAM_exec_size_in_MB>,
-                    // (5) <sync_time>, (6) <operating_system_name>
-                    String minecraftFullJarPath = sockSplit[3];
-                    String destinationDir = sockSplit[1];
-                    String[] syncTime = sockSplit[5].split(":");
-                    // extract the syncing time (in minutes) variable
-                    // and convert it to an integer
-                    int syncTimeInt = Integer.parseInt(syncTime[1]);
-                    
-                    if ( ! minecraftFullJarPath.endsWith(".jar")) 
-                    {
-                        System.out.println("No jar file provided.");
-                        System.exit(1); 
-                    }
-                    
-                    String[] minecraftFullJarPathSplit = minecraftFullJarPath.split("/");
-                    // grab the last part of the split which should be
-                    // the Minecraft server jar file
-                    String minecraftJar = minecraftFullJarPathSplit[minecraftFullJarPathSplit.length - 1];
-                    String sourceDir = null;
-                    
-                    // get the full path to the Minecraft server's directory;
-                    // it should be each value in the array besides the last one
-                    for (int count = 0; count < minecraftFullJarPathSplit.length - 1; count++)
-                    {
-                        if (count == 0)
-                        {
-                            // the first entry should not start with
-                            // a "/"
-                            sourceDir = minecraftFullJarPathSplit[count];
-                        } else {
-                            sourceDir = sourceDir + "/" + minecraftFullJarPathSplit[count];
                         }
+                        
+                        // stop the saving to avoid corruption
+                        stdin(MinecraftServer, "save-off");
+                        
+                        try {
+                            TimeUnit.SECONDS.sleep(1);
+                        } catch(InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        
+                        // copy the server back from RAM to the disk
+                        try {
+                            cp(new File(destinationDir), new File(sourceDir));
+                        } catch(IOException e){
+                            e.printStackTrace();
+                        }
+                        
+                        // finally, turn saving back on again
+                        stdin(MinecraftServer, "save-on");
+                        stdin(MinecraftServer, "say debug saving works");
+                
+                        // wait this long before starting the loop again
+                        try {
+                            TimeUnit.MINUTES.sleep(syncTimeInt);
+                        } catch(InterruptedException e) {
+                            e.printStackTrace();
+                        }
+
                     }
-                                        
-                    String mountRAM = sockSplit[2];
-                    String javaExecRAM = sockSplit[4];
+                }
+            } 
+        }; // end of the first Runnable thread method
+        
+        // 2nd thread
+        // listen to a socket for further commands
+        Runnable mcramListen = new Runnable() {
+            public void run() {
+                
+                while (true) {
                     
-                    if (sockSplit[6].contains("linux")) 
-                    {
-                        mountRAMLinux(mountRAM, destinationDir);
-                    } else if (sockSplit[6].contains("mac")) {
-                        System.out.println("Stub");
-                        System.exit(1);
-                    } else if (sockSplit[6].contains("windows")) {
-                        System.out.println("Stub");
-                        System.exit(1);
+                    if (serverStarted != true) {
+                        
+                        try {
+                            TimeUnit.SECONDS.sleep(1);
+                        } catch(InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    
                     } else {
-                        System.out.println("Unsupported operating system.");
-                        System.exit(1);
-                    }
-                    
-                    // copy the files into the mounted RAM disk
+                        break;  
+                    }                                   
+                }
+
+                String command = "say world, thread 2";
+                
+                for (int count = 1; count < 5; count++) {
+                    stdin(MinecraftServer, command);
+
                     try {
-                        cp(sourceDir, destinationDir);
-                    } catch(IOException e){
+                        TimeUnit.SECONDS.sleep(10);
+                    } catch(InterruptedException e) {
                         e.printStackTrace();
                     }
-                    
-                    // finally, we start the Minecraft server
-                    mcramd.startMinecraftServer(destinationDir, minecraftJar, javaExecRAM);
-                
-                    // 0 means MCRAM will not sync the server back to the disk
-                    if (syncTimeInt != 0)
-                    {
-                        String command = null;
                         
-                        while (true)
-                        {
-                            // save the server
-                            stdin(MinecraftServer, "save all");
-                            
-                            try {
-                                TimeUnit.SECONDS.sleep(1);
-                            } catch(InterruptedException e) {
-                                e.printStackTrace();
-                            }
-                            
-                            // stop the saving to avoid corruption
-                            stdin(MinecraftServer, "save-off");
-                            
-                            try {
-                                TimeUnit.SECONDS.sleep(1);
-                            } catch(InterruptedException e) {
-                                e.printStackTrace();
-                            }
-                            
-                            // copy the server back from RAM to the disk
-                            try {
-                                cp(destinationDir, sourceDir);
-                            } catch(IOException e){
-                                e.printStackTrace();
-                            }
-                            
-                            // finally, turn saving back on again
-                            stdin(MinecraftServer, "save-on");
-                            stdin(MinecraftServer, "say debug saving works");
-                    
-                            // wait this long before starting the loop again
-                            try {
-                                TimeUnit.MINUTES.sleep(syncTimeInt);
-                            } catch(InterruptedException e) {
-                                e.printStackTrace();
-                            }
-
-                        }
-                    }
-            } 
-		}; // end of the first Runnable thread method
-		
-	    // 2nd thread
-		// listen to a socket for further commands
-        Runnable mcramListen = new Runnable() 
-                    {
-                        public void run() 
-                        {
-							while (true) 
-							{
-								if (serverStarted != true)
-								{
-									try {
-                            			TimeUnit.SECONDS.sleep(1);
-                        			} catch(InterruptedException e) {
-                            			e.printStackTrace();
-                        			}
-								} else {
-									break;	
-								}									
-							}
-
-							String command = "say world, thread 2"; 
-							
-							for (int count = 1; count < 5; count++) 
-                    		{
-						 		stdin(MinecraftServer, command);
-
-                        		try {
-                            		TimeUnit.SECONDS.sleep(10);
-                        		} catch(InterruptedException e) {
-                            		e.printStackTrace();
-                        		}
-                        
-                    }
+                }
                          
-                        }
-                    }; 
+            }
+        }; 
                     
         // spawn MCRAMD off as a background thread
         Thread MCRAMStart = new Thread(startAndSync);
         MCRAMStart.start();
         Thread mcramListenStart = new Thread(mcramListen);
         mcramListenStart.start();
-        System.out.println("Hello world.");
-	}
+    }
 }
