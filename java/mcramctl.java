@@ -66,15 +66,28 @@ class mcramctl {
 
     public static void help() 
     {
-        System.out.printf("mcramctl options\n" + 
-                          "\t--help, -h\tdisplay these help options\n" +
-                          "\t--source-dir, -sd\tprovide the full path to the Minecraft server\'s jar file\n" +
-                          "\t--destination-dir, -dd\tprovide an empty directory to mount a RAM disk onto\n" +
-                          "\t--run-ram, -rr\tspecify (in MB) the amount of RAM to run the Minecraft server\n" +
-                          "\t--mount-ram, -mr\tspecify (in MB) the amount of RAM to use for mounting the RAM disk\n" +
-                          "\t--sync-time, -st\tset how long to wait before syncing the server back to the disk\n" +
-                          "\t--version, -v\tshow current MCRAM version\n");
-                          // "--quiet, -q\tsurpress output\n");
+        System.out.printf("mcramctl options\n\n" + 
+                          "\t--help, -h\n" +
+                              "\t\tdisplay these help options\n" +
+                          "\t--source-dir, -s\n" + 
+                              "\t\tprovide the full path to the Minecraft server\'s jar file\n" +
+                              "\t\tWindows: folders should be seperated by \"/\" and not \"\\\"\n" + 
+                          "\t--destination-dir, -d\n" + 
+                              "\t\twhere to mount the RAM disk to\n" +
+                              "\t\tUnix: provide an empty directory\n" +
+                              "\t\t\tdefault: /mcram/\n" +
+                              "\t\tWindows: provide an unused drive letter\n" +
+                              "\t\t\tdefault: M:/\n" + 
+                          "\t--run-ram, -rr\n" +
+                              "\t\tspecify (in MB) the amount of RAM to run the Minecraft server\n" +
+                              "\t\tdefault: 512\n" +
+                          "\t--mount-ram, -mr\n" + 
+                              "\t\tspecify (in MB) the amount of RAM to use for mounting the RAM disk\n" +
+                          "\t--sync-time, -t\n" + 
+                              "\t\tset how long to wait (in minutes) before copying the server back to the disk\n" +
+                              "\t\tdefault: 60\n" +
+                          "\t--version, -v\n" +
+                              "\t\tshow current MCRAM version\n");
     }
 
     public static void main(String args[]) {
@@ -84,10 +97,11 @@ class mcramctl {
         String sourceDir = null;
         String destinationDir = null;
         String cmd = null;
-        String runRAM = null;
+        String runRAM = "512";
         String mountRAM = null;
-        String syncTime = "0";
+        String syncTime = "60";
         String shortOSName = mcramctl.findOS();
+        String socketFile = null;
         String[] startCheck = null;
 
         // only run the interactive mode if no commands are given
@@ -100,7 +114,7 @@ class mcramctl {
                 
                 switch (args[counter]) {
                     case "--destination-dir":
-                    case "-dd":
+                    case "-d":
                         destinationDir = args[counter + 1];
                         counter++;
                         break;
@@ -124,13 +138,14 @@ class mcramctl {
                         counter++;
                         break;
                     case "--source-dir":
-                    case "-sd":
+                    case "-s":
                         sourceDir = args[counter + 1];
                         counter++;
                         break;
                     case "--sync-time":
-                    case "-st":
+                    case "-t":
                         syncTime = args[counter + 1];
+                        break;
                     case "--verbose":  
                     case "-v":
                         System.out.println("MCRAM version: 1.0.0-dev");
@@ -140,7 +155,26 @@ class mcramctl {
                 }
             }
             
-            String socketFile = "/tmp/mcramd.sock";
+            if (shortOSName.equals("linux") || shortOSName.equals("mac")) {
+                socketFile = "/tmp/mcramd.sock";
+            } else if (shortOSName.equals("windows")) {
+                socketFile = "C:/Users/" + System.getProperty("user.name") +
+                         "/AppData/Local/Temp/mcramd.sock";
+            } else {
+                System.out.println("Unsupported operating system.");
+                System.exit(1);
+            }
+                                    
+            // default options
+            if (destinationDir == null) {
+                
+                if (shortOSName.equals("linux") || shortOSName.equals("mac")) {
+                    destinationDir = "/mcram/";
+                } else if (shortOSName.equals("windows")) {
+                    destinationDir = "M:/";
+                }
+                
+            }
             
             // "mcramd:stop" = TBD
             //
@@ -166,9 +200,7 @@ class mcramctl {
                 // mcramd:start,/tmpfs,512,/home/user/mc_server,1024,linux
                 // OR
                 // mcramd:start,C:/ramdisk,1024,C:/Users/Steve/server/,1024,windows
-            }
-            else 
-            {
+            } else {
                 text = cmd;
             }
             

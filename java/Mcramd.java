@@ -4,6 +4,7 @@ import java.io.IOException; // I/O error exception handling
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption; // file copying
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit; // TimeUnit sleep functions resides here
@@ -12,8 +13,8 @@ import java.util.Scanner;
 class Mcramd {
 
     public static Process MinecraftServer = null;
-    public static String java_binary = System.getProperty("java.home") +
-                                       "/bin/java";
+    public static String java_binary = "\"" + System.getProperty("java.home") +
+                                       "/bin/java\"";
     public static boolean serverStarted = false;
 
     public static String readSock(String fileName) {
@@ -24,8 +25,7 @@ class Mcramd {
         try 
         {
             fileReader = new FileReader(fileToRead);
-        } catch (IOException e) 
-        {
+        } catch (IOException e) {
             e.printStackTrace();
         }
             
@@ -62,9 +62,26 @@ class Mcramd {
         execCmd(mountCmd, runDir);
     }
     
-    public static void mountRAMWindows() {
-        System.out.println("Stub");
+    public static void mountRAMWindows(String mountRAM, String destinationDir) {
         
+        String imdiskExecutable = "C:/Windows/System32/imdisk.exe";
+        
+        if (! new File(imdiskExecutable).isFile()) {
+            System.out.println("ERROR. imdisk is not installed.");
+            System.exit(1);
+        }
+        
+        // the destinationDir for Windows should be a drive letter and 
+        // we can't have the path dividers, so "M:/" should become "M:"
+        //// 
+        // our command should look something like this:
+        // C:/Windows/System32/imdisk.exe" -a -s 512M -m M: -p "/fs:ntfs /q /y"
+        String mountCmd = (imdiskExecutable + " -a -s " + mountRAM + "M -m " + 
+                           destinationDir.substring(0, 2) + " -p \"/fs:ntfs /q /y\"");
+        // use the Windows temporary directory
+        File runDir = new File("C:/Users/" + System.getProperty("user.name") +
+                               "/AppData/Local/Temp"); 
+        execCmd(mountCmd, runDir);
     }
 
     // return the contents of a directory
@@ -75,22 +92,29 @@ class Mcramd {
 
     // copy files and folders recursively
     public static void cp(File src_dir, File dst_dir) throws IOException {
-        Path src_file = null;
-        Path dst_file = null;    
+        // initiate our variables outside of our loops so they are in the scope of this method
+        Path src_path = src_dir.toPath();
+        Path dst_path = dst_dir.toPath();    
         
+        Path debug_srcPath = src_dir.toPath();
+        Path debug_srcRoot = debug_srcPath.getRoot();
+        System.out.println("debug - debug_srcPath: " + debug_srcPath);
+                System.out.println("debug - debug_srcRoot: " + debug_srcRoot);
+        
+         // if the source and destination are only files, then just copy and exit 
         if ((! src_dir.isDirectory() && ! dst_dir.isDirectory())) {
-            Files.copy(src_dir.toPath(), dst_dir.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
+            Files.copy(src_path, dst_path, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
         } else if (src_dir.isDirectory())   {
             
-            if (! Files.exists(dst_dir.toPath())) {
-                Files.copy(src_dir.toPath(), dst_dir.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            if (! Files.exists(dst_path)) {
+                Files.copy(src_path, dst_path, StandardCopyOption.REPLACE_EXISTING);
             }
             
             File[] listOfFiles = dir(src_dir);
    
             for(File filename : listOfFiles) {
-                src_file = filename.toPath();
-                dst_file = new File(dst_dir.getAbsolutePath() + "/" +  filename.getName()).toPath();
+                Path src_file = filename.toPath();
+                Path dst_file = new File(dst_dir.getAbsolutePath() + "/" +  filename.getName()).toPath();
 
                 if (filename.isDirectory()) {
                 
@@ -154,7 +178,7 @@ class Mcramd {
         // java -Xmx1024M -Xms1024M -jar minecraft_server.jar nogui
         String runCmd = (java_binary + " -Xmx" + javaExecRAM + "M -Xms" + 
                          javaExecRAM + "M -jar " + mcJar + " nogui");
-        System.out.println("deubg - runCmd: " + runCmd);
+        System.out.println("debug - runCmd: " + runCmd);
         MinecraftServer = execCmd(runCmd, runDirFile);
         serverStarted = true;
     }
@@ -170,15 +194,25 @@ class Mcramd {
                 // initalize the object from our class
                 Mcramd mcramd = new Mcramd();
                     
-                // first we want to start the Minecraft server (after mounting RAM)
-               // File runDir = new File("C:/path/to/minecraft/server/");
-               //  String runCmd = (java_prefix + "/bin/java" + 
-                //                 " -jar C:/path/to/minecraft/server/minecraft_server.1.9.jar");
-               
-                    
-                // this socket is valid for Linux and Mac only
-                String socket = "/tmp/mcramd.sock"; 
-                String socketText = mcramd.readSock(socket);
+                // attempt to list to the socket
+                String socket = null;
+                String socketUnix = "/tmp/mcramd.sock"; 
+                String socketWindows = "C:/Users/" + System.getProperty("user.name") +
+                                       "/AppData/Local/Temp/mcramd.sock";
+                String socketText = null;
+                
+                // convert our socket* strings to a Path and then use the
+                // Files class to see if it exists
+                if (Files.exists(Paths.get(socketUnix))) {
+                    socket = socketUnix;
+                } else if (Files.exists(Paths.get(socketWindows))) {
+                    socket = socketWindows;
+                } else {
+                    System.out.println("No socket file found.");
+                    System.exit(1);
+                }
+                
+                socketText = mcramd.readSock(socket);
                 String[] sockSplit = socketText.split(",");
 
                 // read the socket until it recieves the start command
@@ -213,11 +247,13 @@ class Mcramd {
                 // grab the last part of the split which should be
                 // the Minecraft server jar file
                 String minecraftJar = minecraftFullJarPathSplit[minecraftFullJarPathSplit.length - 1];
+                System.out.println("debug - minecraftJar: " + minecraftJar);
                 String sourceDir = null;
                 
                 // get the full path to the Minecraft server's directory;
                 // it should be each value in the array besides the last one
                 for (int count = 0; count < minecraftFullJarPathSplit.length - 1; count++) {
+                    
                     if (count == 0) {
                         // the first entry should not start with
                         // a "/"
@@ -225,19 +261,20 @@ class Mcramd {
                     } else {
                         sourceDir = sourceDir + "/" + minecraftFullJarPathSplit[count];
                     }
+                    
                 }
                                     
                 String mountRAM = sockSplit[2];
                 String javaExecRAM = sockSplit[4];
+                String OS = sockSplit[6];
                 
-                if (sockSplit[6].contains("linux")) {
+                if (OS.contains("linux")) {
                     mountRAMLinux(mountRAM, destinationDir);
-                } else if (sockSplit[6].contains("mac")) {
+                } else if (OS.contains("mac")) {
                     System.out.println("Stub");
                     System.exit(1);
-                } else if (sockSplit[6].contains("windows")) {
-                    System.out.println("Stub");
-                    System.exit(1);
+                } else if (OS.contains("windows")) {
+                    mountRAMWindows(mountRAM, destinationDir);
                 } else {
                     System.out.println("Unsupported operating system.");
                     System.exit(1);
@@ -245,7 +282,17 @@ class Mcramd {
                 
                 // copy the files into the mounted RAM disk
                 try {
-                    cp(new File(sourceDir), new File(destinationDir));
+                    System.out.println("debug - sourceDir: " + sourceDir + "\n" + "debug - dd: " + destinationDir);
+                    // Windows currently has issues in MCRAM with handling 
+                    // copying to/from different drive letters (partitions);
+                    if (OS.equals("windows")) {
+                        String runCmd = "xcopy /E /K /O " + sourceDir.replaceAll("/", "\\") + 
+                                        " " + destinationDir.replaceAll("/", "\\");
+                        execCmd(runCmd, new File("C:/"));
+                    }
+                    else {
+                        cp(new File(sourceDir), new File(destinationDir));
+                    }
                 } catch(IOException e){
                     e.printStackTrace();
                 }
@@ -278,12 +325,20 @@ class Mcramd {
                         }
                         
                         // copy the server back from RAM to the disk
-                        try {
-                            cp(new File(destinationDir), new File(sourceDir));
-                        } catch(IOException e){
-                            e.printStackTrace();
+                        if (OS.equals("windows")) {
+                            String runCmd = "xcopy /E /K /O " + destinationDir.replaceAll("/", "\\") + " " + sourceDir.replaceAll("/", "\\");
+                            execCmd(runCmd, new File("C:/"));
                         }
-                        
+                        else {
+                            
+                            try {
+                                cp(new File(destinationDir), new File(sourceDir));
+                            } catch(IOException e){
+                                e.printStackTrace();
+                            }
+                            
+                        }
+
                         // finally, turn saving back on again
                         stdin(MinecraftServer, "save-on");
                         stdin(MinecraftServer, "say debug saving works");
@@ -320,7 +375,7 @@ class Mcramd {
                     }                                   
                 }
 
-                String command = "say world, thread 2";
+                String command = "say hello world, thread 2";
                 
                 for (int count = 1; count < 5; count++) {
                     stdin(MinecraftServer, command);
