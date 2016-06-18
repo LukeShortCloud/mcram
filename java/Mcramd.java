@@ -91,7 +91,7 @@ class Mcramd {
     }
 
     // copy files and folders recursively
-    public static void cp(File src_dir, File dst_dir) throws IOException {
+    public static void cpDir(File src_dir, File dst_dir) throws IOException {
         // initiate our variables outside of our loops so they are in the scope of this method
         Path src_path = src_dir.toPath();
         Path dst_path = dst_dir.toPath();    
@@ -135,7 +135,7 @@ class Mcramd {
                         File dst_subFile = new File(dst_dir.getAbsolutePath() + "/" + filename.getName() + 
                                                     "/" + filetmp.getName());
                         // copy the sub directory and it's contents (inception!)
-                        cp(src_subFile, dst_subFile);
+                        cpDir(src_subFile, dst_subFile);
                     } 
                 } else {
                     Files.copy(src_file, dst_file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
@@ -283,16 +283,9 @@ class Mcramd {
                 // copy the files into the mounted RAM disk
                 try {
                     System.out.println("debug - sourceDir: " + sourceDir + "\n" + "debug - dd: " + destinationDir);
-                    // Windows currently has issues in MCRAM with handling 
-                    // copying to/from different drive letters (partitions);
-                    if (OS.equals("windows")) {
-                        String runCmd = "xcopy /E /K /O " + sourceDir.replaceAll("/", "\\") + 
-                                        " " + destinationDir.replaceAll("/", "\\");
-                        execCmd(runCmd, new File("C:/"));
-                    }
-                    else {
-                        cp(new File(sourceDir), new File(destinationDir));
-                    }
+                    // this should be removed and enitrely 
+                    // replaced with a "cpFile" method
+                    cpDir(new File(sourceDir), new File(destinationDir));
                 } catch(IOException e){
                     e.printStackTrace();
                 }
@@ -325,19 +318,12 @@ class Mcramd {
                         }
                         
                         // copy the server back from RAM to the disk
-                        if (OS.equals("windows")) {
-                            String runCmd = "xcopy /E /K /O " + destinationDir.replaceAll("/", "\\") + " " + sourceDir.replaceAll("/", "\\");
-                            execCmd(runCmd, new File("C:/"));
+                        try {
+                            cpDir(new File(destinationDir), new File(sourceDir));
+                        } catch(IOException e){
+                            e.printStackTrace();
                         }
-                        else {
                             
-                            try {
-                                cp(new File(destinationDir), new File(sourceDir));
-                            } catch(IOException e){
-                                e.printStackTrace();
-                            }
-                            
-                        }
 
                         // finally, turn saving back on again
                         stdin(MinecraftServer, "save-on");

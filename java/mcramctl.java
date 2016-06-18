@@ -6,6 +6,8 @@ import java.util.Scanner; // stdin
 
 class mcramctl {
     
+    public static String socketText = null;
+    
     public mcramctl() 
     {
         //contrusctor 
@@ -154,16 +156,6 @@ class mcramctl {
                         break;
                 }
             }
-            
-            if (shortOSName.equals("linux") || shortOSName.equals("mac")) {
-                socketFile = "/tmp/mcramd.sock";
-            } else if (shortOSName.equals("windows")) {
-                socketFile = "C:/Users/" + System.getProperty("user.name") +
-                         "/AppData/Local/Temp/mcramd.sock";
-            } else {
-                System.out.println("Unsupported operating system.");
-                System.exit(1);
-            }
                                     
             // default options
             if (destinationDir == null) {
@@ -181,13 +173,13 @@ class mcramctl {
             // "mcramd:exec" = exec a command on the server
             // Example: mcramd:exec,say Hello Minecraft World!
             
-            String text = null;
+
             
             if (cmd == null) 
             {
                 // seperate our command string by commas "," for 
                 // mcramd to process through
-                text = ("mcramd:start" + "," + destinationDir +
+                socketText = ("mcramd:start" + "," + destinationDir +
                         "," + mountRAM + "," + sourceDir + "," +
                         runRAM + "," + "syncTime:" +
                         syncTime + "," + shortOSName);
@@ -201,19 +193,34 @@ class mcramctl {
                 // OR
                 // mcramd:start,C:/ramdisk,1024,C:/Users/Steve/server/,1024,windows
             } else {
-                text = cmd;
+                socketText = cmd;
             }
             
-            if (text.contains(",null")) 
+            if (socketText.contains(",null")) 
             {
                 System.out.println("Required option(s) are missing " +
                                    "from string:");
-                System.out.println(text);
+                System.out.println(socketText);
                 System.exit(1); 
-            }       
-            mcramctl.writeToFile(socketFile, text);
+            }
+
         }
-    
+        
+        
+            if (shortOSName.equals("linux") || shortOSName.equals("mac")) {
+                socketFile = "/tmp/mcramd.sock";
+            } else if (shortOSName.equals("windows")) {
+                socketFile = "C:/Users/" + System.getProperty("user.name") +
+                         "/AppData/Local/Temp/mcramd.sock";
+                System.out.println("debug - socketFile: " + socketFile);
+            } else {
+                System.out.println("Unsupported operating system.");
+                System.exit(1);
+            }
+        
+            System.out.println("debug - socketFile: " + socketFile);       
+            mcramctl.writeToFile(socketFile, socketText);
+        
     	Mcramd.main(args); // execute the MCRAM daemon class
 
     }
