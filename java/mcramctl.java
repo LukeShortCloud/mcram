@@ -2,11 +2,15 @@
 import java.io.File; // file and folder handling
 import java.io.IOException; // I/O error exception handling
 import java.io.PrintWriter;
+import java.io.PrintStream; // stdout
 import java.util.Scanner; // stdin
 
-class mcramctl {
+class mcramctl 
+{
     
     public static String socketText = null;
+    // this is only turned on if "verbose" debugging mode is enabled
+    public static PrintStream debug = null;
     
     public mcramctl() 
     {
@@ -34,35 +38,38 @@ class mcramctl {
 
     public static void writeToFile(String fileName, String text) 
     {
-        try {
+        try 
+        {
             PrintWriter editor = new PrintWriter(fileName, "UTF-8");
             editor.println(text);
             editor.close();
-        } catch (IOException e) {
+        } catch (IOException e) 
+        {
             e.printStackTrace();
         }   
     }
 
     public static String[] interactiveMode() 
     {
+        Scanner stdin = new Scanner(System.in); // standard input from the user
         // get source directory
         System.out.println("What folder is your Minecraft server located in?");
-        Scanner sourceScanFolder = new Scanner(System.in); // stdin
-        String sourceFolder = sourceScanFolder.next(); // convert from Scanner to String
+        String sourceFolder = stdin.next(); // convert from Scanner to String
         // get destination directory
-        System.out.println("What folder would you like use for mounting the RAM disk?");
-        Scanner destinationScanFolder = new Scanner(System.in); 
-        String destinationFolder = destinationScanFolder.next();
+        System.out.println("What folder would you like use for mounting the RAM disk?"); 
+        String destinationFolder = stdin.next();
         // get size for RAM disk
         System.out.println("How much RAM (in MB) do you want to use for mounting Minecraft into RAM?");
-        Scanner MBofMountScan = new Scanner(System.in);
-        String MBofMount = MBofMountScan.next();
+        String MBofMount = stdin.next();
         // get the amount of RAM that Java should use for running the server
         System.out.println("How much RAM (in MB) do you want to use for running Minecraft?");
-        Scanner MBofRunScan = new Scanner(System.in);
-        String MBofRun = MBofRunScan.next();
+        String MBofRun = stdin.next();
+        // sync time
+        System.out.println("How long (in minutes) to wait before syncing back to the disk?");
+        String syncTime = stdin.next();
 
-        String[] interactiveAnswers = {sourceFolder, destinationFolder, MBofMount, MBofRun};    
+        String[] interactiveAnswers = {sourceFolder, destinationFolder, 
+                                       MBofMount, MBofRun, syncTime};    
         return interactiveAnswers;
     }
 
@@ -92,8 +99,8 @@ class mcramctl {
                               "\t\tshow current MCRAM version\n");
     }
 
-    public static void main(String args[]) {
-		
+    public static void main(String args[]) 
+    {
         mcramctl mcramctl = new mcramctl(); // create an object      
         // initiate variables that will be needed later
         String sourceDir = null;
@@ -106,15 +113,23 @@ class mcramctl {
         String socketFile = null;
         String[] startCheck = null;
 
-        // only run the interactive mode if no commands are given
-        if (args.length == 0) {
+        // only run the interactive mode if 
+        // no command line arguments are given
+        if (args.length == 0) 
+        {
             String interactiveAnswers[] = mcramctl.interactiveMode();
-        } 
-        else {
-            // sort through the command line arguments given
-            for (int counter = 0; counter < args.length; counter++) {
-                
-                switch (args[counter]) {
+            // seperate our command string by commas "," for 
+            // mcramd to process through
+            socketText = ("mcramd:start" + "," + interactiveAnswers[1] +
+                    "," + interactiveAnswers[2] + "," + interactiveAnswers[0] + "," +
+                    interactiveAnswers[3] + "," + "syncTime:" +
+                    interactiveAnswers[4] + "," + shortOSName);
+        } else {
+            // sort through the command line arguments
+            for (int counter = 0; counter < args.length; counter++) 
+            {
+                switch (args[counter]) 
+                {
                     case "--destination-dir":
                     case "-d":
                         destinationDir = args[counter + 1];
@@ -148,21 +163,28 @@ class mcramctl {
                     case "-t":
                         syncTime = args[counter + 1];
                         break;
-                    case "--verbose":  
+                    case "--verbose":
                     case "-v":
-                        System.out.println("MCRAM version: 1.0.0-dev");
+                        debug = System.out;
+                        counter++;
+                        break;
+                    case "--version":  
+                    case "-V":
+                        System.out.println("MCRAM version: 1.0.0-alpha");
                         System.exit(0);
                     default:
                         break;
                 }
             }
-                                    
+
             // default options
-            if (destinationDir == null) {
-                
-                if (shortOSName.equals("linux") || shortOSName.equals("mac")) {
+            if (destinationDir == null) 
+            {
+                if (shortOSName.equals("linux") || shortOSName.equals("mac")) 
+                {
                     destinationDir = "/mcram/";
-                } else if (shortOSName.equals("windows")) {
+                } else if (shortOSName.equals("windows")) 
+                {
                     destinationDir = "M:/";
                 }
                 
@@ -191,8 +213,9 @@ class mcramctl {
                 // Example: 
                 // mcramd:start,/tmpfs,512,/home/user/mc_server,1024,linux
                 // OR
-                // mcramd:start,C:/ramdisk,1024,C:/Users/Steve/server/,1024,windows
-            } else {
+                // mcramd:start,R:/,1024,C:/Users/Steve/server/,1024,windows
+            } else 
+            {
                 socketText = cmd;
             }
             
@@ -207,19 +230,22 @@ class mcramctl {
         }
         
         
-            if (shortOSName.equals("linux") || shortOSName.equals("mac")) {
-                socketFile = "/tmp/mcramd.sock";
-            } else if (shortOSName.equals("windows")) {
-                socketFile = "C:/Users/" + System.getProperty("user.name") +
-                         "/AppData/Local/Temp/mcramd.sock";
-                System.out.println("debug - socketFile: " + socketFile);
-            } else {
-                System.out.println("Unsupported operating system.");
-                System.exit(1);
-            }
+        if (shortOSName.equals("linux") || shortOSName.equals("mac")) 
+        {
+            socketFile = "/tmp/mcramd.sock";
+        } else if (shortOSName.equals("windows")) 
+        {
+            socketFile = "C:/Users/" + System.getProperty("user.name") +
+                     "/AppData/Local/Temp/mcramd.sock";
+            System.out.println("debug - socketFile: " + socketFile);
+        } else 
+        {
+            System.out.println("Unsupported operating system.");
+            System.exit(1);
+        }
         
-            System.out.println("debug - socketFile: " + socketFile);       
-            mcramctl.writeToFile(socketFile, socketText);
+       // debug.println("debug - socketFile: " + socketFile);       
+        mcramctl.writeToFile(socketFile, socketText);
         
     	Mcramd.main(args); // execute the MCRAM daemon class
 
