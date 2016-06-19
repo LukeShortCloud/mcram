@@ -2,7 +2,6 @@
 import java.io.File; // file and folder handling
 import java.io.IOException; // I/O error exception handling
 import java.io.PrintWriter;
-import java.io.PrintStream; // stdout
 import java.util.Scanner; // stdin
 
 class mcramctl 
@@ -10,7 +9,16 @@ class mcramctl
     
     public static String socketText = null;
     // this is only turned on if "verbose" debugging mode is enabled
-    public static PrintStream debug = null;
+    public static boolean debugMode = false;
+
+    public static void debug(String msg) 
+    {
+        if (debugMode == true) 
+        {
+            System.out.println("DEBUG: " + msg);
+        }
+    }
+    
     
     public mcramctl() 
     {
@@ -23,16 +31,21 @@ class mcramctl
         String osName = System.getProperty("os.name");
         String shortOSName = null;
         
-        if (osName.toLowerCase().contains("mac")) {
+        if (osName.toLowerCase().contains("mac")) 
+        {
             shortOSName = "mac";
-        } else if (osName.toLowerCase().contains("linux")) {
+        } else if (osName.toLowerCase().contains("linux")) 
+        {
             shortOSName = "linux";
-        } else if (osName.toLowerCase().contains("windows")) {
+        } else if (osName.toLowerCase().contains("windows")) 
+        {
             shortOSName = "windows";
-        } else {
+        } else 
+        {
             System.out.println("Unsupported operating system. Exiting...");
             System.exit(1);
         }   
+        debug("os=" + shortOSName);
         return shortOSName;
     }
 
@@ -95,7 +108,9 @@ class mcramctl
                           "\t--sync-time, -t\n" + 
                               "\t\tset how long to wait (in minutes) before copying the server back to the disk\n" +
                               "\t\tdefault: 60\n" +
-                          "\t--version, -v\n" +
+                          "\t--verbose, -v\n" +
+                              "\t\tdisplay debugging information\n" +
+                          "\t--version, -V\n" +
                               "\t\tshow current MCRAM version\n");
     }
 
@@ -162,10 +177,11 @@ class mcramctl
                     case "--sync-time":
                     case "-t":
                         syncTime = args[counter + 1];
+                        counter++;
                         break;
                     case "--verbose":
                     case "-v":
-                        debug = System.out;
+                        debugMode = true;
                         counter++;
                         break;
                     case "--version":  
@@ -187,15 +203,12 @@ class mcramctl
                 {
                     destinationDir = "M:/";
                 }
-                
             }
             
             // "mcramd:stop" = TBD
             //
             // "mcramd:exec" = exec a command on the server
             // Example: mcramd:exec,say Hello Minecraft World!
-            
-
             
             if (cmd == null) 
             {
@@ -204,20 +217,23 @@ class mcramctl
                 socketText = ("mcramd:start" + "," + destinationDir +
                         "," + mountRAM + "," + sourceDir + "," +
                         runRAM + "," + "syncTime:" +
-                        syncTime + "," + shortOSName);
+                        syncTime + "," + shortOSName + ",debug:" + debugMode);
                 // "mcramd:start" = start Minecraft server
                 // full mcramd:start options:
                 // (1) <mount_directory>, (2) <tmpfs_size_in_MB>, 
                 // (3) <source_directory>, (4) <java_RAM_exec_size_in_MB>,
                 // (5) <sync_time>, (6) <operating_system_name>
+                // (7) debug mode (true or false) 
                 // Example: 
-                // mcramd:start,/tmpfs,512,/home/user/mc_server,1024,linux
+                // mcramd:start,/tmpfs,512,/home/user/mc_server,1024,linux,debug:false
                 // OR
-                // mcramd:start,R:/,1024,C:/Users/Steve/server/,1024,windows
+                // mcramd:start,R:/,1024,C:/Users/Steve/server/,1024,windows,debug:true
             } else 
             {
                 socketText = cmd;
             }
+            
+            debug("socketText=" + socketText);
             
             if (socketText.contains(",null")) 
             {
@@ -226,7 +242,6 @@ class mcramctl
                 System.out.println(socketText);
                 System.exit(1); 
             }
-
         }
         
         
@@ -237,16 +252,14 @@ class mcramctl
         {
             socketFile = "C:/Users/" + System.getProperty("user.name") +
                      "/AppData/Local/Temp/mcramd.sock";
-            System.out.println("debug - socketFile: " + socketFile);
         } else 
         {
             System.out.println("Unsupported operating system.");
             System.exit(1);
         }
         
-       // debug.println("debug - socketFile: " + socketFile);       
+        debug("socketFile=" + socketFile);   
         mcramctl.writeToFile(socketFile, socketText);
-        
     	Mcramd.main(args); // execute the MCRAM daemon class
 
     }

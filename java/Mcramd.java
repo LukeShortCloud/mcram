@@ -1,4 +1,3 @@
-//package mcram;
 import java.io.*;
 import java.io.IOException; // I/O error exception handling
 import java.io.File;
@@ -16,6 +15,15 @@ class Mcramd
     public static String java_binary = "\"" + System.getProperty("java.home") +
                                        "/bin/java\"";
     public static boolean serverStarted = false;
+    public static boolean debugMode = false;
+
+    public static void debug(String msg) 
+    {
+        if (debugMode == true) 
+        {
+            System.out.println("DEBUG: " + msg);
+        }
+    }
 
     public static String readSock(String fileName) 
     {
@@ -126,6 +134,8 @@ class Mcramd
     // copy files and folders recursively
     public static void cpDir(File src_dir, File dst_dir) throws IOException 
     {
+        debug("cpDir - src_dir=" + src_dir);
+        debug("cpDir - dst_dir=" + dst_dir);
         // initiate our variables outside of our loops so they are in the scope of this method
         Path src_path = src_dir.toPath();
         Path dst_path = dst_dir.toPath();    
@@ -214,7 +224,7 @@ class Mcramd
         // java -Xmx1024M -Xms1024M -jar minecraft_server.jar nogui
         String runCmd = (java_binary + " -Xmx" + javaExecRAM + "M -Xms" + 
                          javaExecRAM + "M -jar " + mcJar + " nogui");
-        //System.out.println("debug - runCmd: " + runCmd);
+        debug("runCmd=" + runCmd);
         MinecraftServer = execCmd(runCmd, runDirFile);
         serverStarted = true;
     }
@@ -272,10 +282,12 @@ class Mcramd
                 // full mcramd:start options:
                 // (1) <mount_directory>, (2) <tmpfs_size_in_MB>, 
                 // (3) <source_directory>, (4) <java_RAM_exec_size_in_MB>,
-                // (5) <sync_time>, (6) <operating_system_name>
+                // (5) <sync_time>, (6) <operating_system_name>, 
+                // (7) debug mode (true or false) 
                 String minecraftFullJarPath = sockSplit[3];
                 String destinationDir = sockSplit[1];
                 String[] syncTime = sockSplit[5].split(":");
+                debugMode = Boolean.valueOf(sockSplit[7].split(":")[1]);
                 // extract the syncing time (in minutes) variable
                 // and convert it to an integer
                 int syncTimeInt = Integer.parseInt(syncTime[1]);
@@ -290,7 +302,7 @@ class Mcramd
                 // grab the last part of the split which should be
                 // the Minecraft server jar file
                 String minecraftJar = minecraftFullJarPathSplit[minecraftFullJarPathSplit.length - 1];
-                //System.out.println("debug - minecraftJar: " + minecraftJar);
+                debug("minecraftJar: " + minecraftJar);
                 String sourceDir = null;
                 
                 // get the full path to the Minecraft server's directory;
@@ -318,23 +330,22 @@ class Mcramd
                     mountRAMLinux(mountRAM, destinationDir);
                 } else if (OS.contains("mac")) 
                 {
-                    System.out.println("Stub");
-                    System.exit(1);
+                    mountRAMMac(mountRAM, destinationDir);
                 } else if (OS.contains("windows")) 
                 {
                     mountRAMWindows(mountRAM, destinationDir);
-                } else {
+                } else 
+                {
                     System.out.println("Unsupported operating system.");
                     System.exit(1);
                 }
                 
                 // copy the files into the mounted RAM disk
-                try {
-                    //System.out.println("debug - sourceDir: " + sourceDir + "\n" + "debug - dd: " + destinationDir);
-                    // this should be removed and enitrely 
-                    // replaced with a "cpFile" method
+                try 
+                {
                     cpDir(new File(sourceDir), new File(destinationDir));
-                } catch(IOException e){
+                } catch(IOException e)
+                {
                     e.printStackTrace();
                 }
                 
@@ -382,7 +393,7 @@ class Mcramd
 
                         // finally, turn saving back on again
                         stdin(MinecraftServer, "save-on");
-                        stdin(MinecraftServer, "say MCRAM saving server now...");
+                        stdin(MinecraftServer, "say MCRAM saved changes to disk.");
                 
                         // wait this long before starting the loop again
                         try 
@@ -418,11 +429,14 @@ class Mcramd
                     
                     } else 
                     {
+                        System.out.println("The Minecraft server has started.");
                         break;  
                     }                                   
                 }
 
-                String command = "say hello world, thread 2";
+                // Example command:
+                //String command = "say hello world, thread 2";
+                String command = "say MCRAM is running correctly.";
                 
                 for (int count = 1; count < 5; count++) 
                 {
