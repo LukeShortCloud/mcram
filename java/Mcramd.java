@@ -12,8 +12,8 @@ import java.util.Scanner;
 class Mcramd 
 {
     public static Process MinecraftServer = null;
-    public static String java_binary = "\"" + System.getProperty("java.home") +
-                                       "/bin/java\"";
+    public static String java_binary = "" + System.getProperty("java.home") +
+                                       "/bin/java";
     public static boolean serverStarted = false;
     public static boolean debugMode = false;
 
@@ -84,27 +84,17 @@ class Mcramd
             System.exit(1);
         }
         
-        // the destinationDir for Windows should be a drive letter and 
-        // we can't have the path dividers, so "M:/" should become "M:"
-        //// 
-        // if you were to manually run these commands on the command promt
-        // it would look similar to this:
-        // C:/Windows/System32/imdisk.exe" -a -s 512M -m M: -p "/fs:ntfs /q /y"
-        // for formatting the drive automatically, the Administrator account
-        // has to be used; the somme should look similar to this:
+        // automatic formatting example command:
         // runas /user:Administrator "C:/Windows/System32/imdisk.exe -a -s 512M -m M: -p \"/fs:ntfs /q /y\""
+        // that, in itself, formats the partition with Windows' built-in 
+        // "format" utility
         // due to the security risks presented by enabling the Administrator
-        // the Administrator account MUST be enabled and MUST have a password
-        // assigned; this allows the creation and format of the ramdisk
-        // see: https://www.petri.com/enable-the-windows-7-administrator-account
-        // account and the complexity it adds to automatically formatting,
-        // we will instead prompt the user to format the drive
-        //String mountCmd = (imdiskExecutable + " -a -s " + mountRAM + "M -m " + 
-        //                   destinationDir.substring(0, 2) + " -p \\\"/fs:ntfs /q /y\\\"");
-        //String windowsRunAsWrapper = ("runas /user:Administrator \"" +
-        //                              mountCmd + "\"");
-        //System.out.println("debug - mountCmd: " + mountCmd);
-        
+		// and the complexity it adds to automatically formatting,
+        // MCRAM will instead prompt the user to format the drive.
+        // for reference, this explains how to enable the Administrator account:
+        // https://www.petri.com/enable-the-windows-7-administrator-account
+
+        // example mountCmd: C:/Windows/System32/imdisk.exe" -a -s 512M -m M: 
         String mountCmd = (imdiskExecutable + " -a -s " + mountRAM + "M -m " + 
                            destinationDir.substring(0, 2));
         // use the Windows temporary directory
@@ -228,6 +218,44 @@ class Mcramd
         MinecraftServer = execCmd(runCmd, runDirFile);
         serverStarted = true;
     }
+    
+    public static String findSocket()
+    {
+                String foundSocket = null;
+                String socketUnix = "/tmp/mcramd.sock"; 
+                String socketWindows = "C:/Users/" + System.getProperty("user.name") +
+                                       "/AppData/Local/Temp/mcramd.sock";
+                String socketText = null;
+                
+                // convert our socket strings to a Path and then use the
+                // Files class to see if it exists
+                if (Files.exists(Paths.get(socketUnix))) 
+                {
+                    foundSocket = socketUnix;
+                } else if (Files.exists(Paths.get(socketWindows))) 
+                {
+                    foundSocket = socketWindows;
+                } else 
+                {
+                    System.out.println("No socket file found.");
+                    System.exit(1);
+                }
+                return foundSocket;
+
+	}
+	
+	public static void writeToFile(String fileName, String text) 
+    {
+        try 
+        {
+            PrintWriter editor = new PrintWriter(fileName, "UTF-8");
+            editor.println(text);
+            editor.close();
+        } catch (IOException e) 
+        {
+            e.printStackTrace();
+        }   
+    }
 
     public static void main(String[] args) 
     {
@@ -241,34 +269,14 @@ class Mcramd
                 // initalize the object from our class
                 Mcramd mcramd = new Mcramd();
                     
-                // attempt to list to the socket
-                String socket = null;
-                String socketUnix = "/tmp/mcramd.sock"; 
-                String socketWindows = "C:/Users/" + System.getProperty("user.name") +
-                                       "/AppData/Local/Temp/mcramd.sock";
-                String socketText = null;
-                
-                // convert our socket strings to a Path and then use the
-                // Files class to see if it exists
-                if (Files.exists(Paths.get(socketUnix))) 
-                {
-                    socket = socketUnix;
-                } else if (Files.exists(Paths.get(socketWindows))) 
-                {
-                    socket = socketWindows;
-                } else 
-                {
-                    System.out.println("No socket file found.");
-                    System.exit(1);
-                }
-                
-                socketText = mcramd.readSock(socket);
+				String socketFile = findSocket();
+                String socketText = mcramd.readSock(socketFile);
                 String[] sockSplit = socketText.split(",");
 
                 // read the socket until it recieves the start command
                 while (sockSplit[0].contains("mcramd:start") == false) 
                 {
-                    socketText = mcramd.readSock(socket);
+                    socketText = mcramd.readSock(socketFile);
                     sockSplit = socketText.split(",");
                     
                     try 
@@ -309,16 +317,15 @@ class Mcramd
                 // it should be each value in the array besides the last one
                 for (int count = 0; count < minecraftFullJarPathSplit.length - 1; count++) 
                 {
-                    
                     if (count == 0) 
                     {
                         // the first entry should not start with
                         // a "/"
                         sourceDir = minecraftFullJarPathSplit[count];
-                    } else {
+                    } else 
+                    {
                         sourceDir = sourceDir + "/" + minecraftFullJarPathSplit[count];
                     }
-                    
                 }
                                     
                 String mountRAM = sockSplit[2];
@@ -416,10 +423,8 @@ class Mcramd
                 
                 while (true) 
                 {
-                    
                     if (serverStarted != true) 
                     {
-                        
                         try 
                         {
                             TimeUnit.SECONDS.sleep(1);
@@ -433,24 +438,34 @@ class Mcramd
                         break;  
                     }                                   
                 }
-
-                // Example command:
-                //String command = "say hello world, thread 2";
-                String command = "say MCRAM is running correctly.";
                 
-                for (int count = 1; count < 5; count++) 
-                {
-                    stdin(MinecraftServer, command);
+				String socketFile = findSocket();
 
-                    try 
+                // read the socket until it recieves the start command
+                //while (sockSplit[0].contains("mcramd:exec") == false)
+                while (true) 
+                {
+					String socketText = readSock(socketFile);
+					String[] sockSplit = socketText.split(",");
+                
+					if (sockSplit[0].contains("mcramd:exec") == true)
+					{
+						String command = sockSplit[1];
+						stdin(MinecraftServer, command);
+					}
+					
+					// we want to clear out the socketFile so the command
+					// is not run more than once
+					writeToFile(socketFile, "");
+					
+					try 
                     {
-                        TimeUnit.SECONDS.sleep(10);
+                        TimeUnit.SECONDS.sleep(1);
                     } catch(InterruptedException e) 
                     {
                         e.printStackTrace();
                     }
-                        
-                }
+				}
                          
             }
         }; 

@@ -1,4 +1,3 @@
-//package mcram;
 import java.io.File; // file and folder handling
 import java.io.IOException; // I/O error exception handling
 import java.io.PrintWriter;
@@ -88,7 +87,7 @@ class mcramctl
 
     public static void help() 
     {
-        System.out.printf("mcramctl options\n\n" + 
+        System.out.printf("mcramctl options\n" + 
                           "\t--help, -h\n" +
                               "\t\tdisplay these help options\n" +
                           "\t--source-dir, -s\n" + 
@@ -105,9 +104,12 @@ class mcramctl
                               "\t\tdefault: 512\n" +
                           "\t--mount-ram, -mr\n" + 
                               "\t\tspecify (in MB) the amount of RAM to use for mounting the RAM disk\n" +
+                              "\t\tdefault: 512\n" +
                           "\t--sync-time, -t\n" + 
                               "\t\tset how long to wait (in minutes) before copying the server back to the disk\n" +
                               "\t\tdefault: 60\n" +
+                          "\t--execute, -e\n" +
+						      "\t\tsend a command to the Minecraft server\n" +
                           "\t--verbose, -v\n" +
                               "\t\tdisplay debugging information\n" +
                           "\t--version, -V\n" +
@@ -120,9 +122,10 @@ class mcramctl
         // initiate variables that will be needed later
         String sourceDir = null;
         String destinationDir = null;
-        String cmd = null;
+        boolean isExec = false;
+        String cmd = "";
         String runRAM = "512";
-        String mountRAM = null;
+        String mountRAM = "512";
         String syncTime = "60";
         String shortOSName = mcramctl.findOS();
         String socketFile = null;
@@ -139,7 +142,8 @@ class mcramctl
                     "," + interactiveAnswers[2] + "," + interactiveAnswers[0] + "," +
                     interactiveAnswers[3] + "," + "syncTime:" +
                     interactiveAnswers[4] + "," + shortOSName);
-        } else {
+        } else 
+        {
             // sort through the command line arguments
             for (int counter = 0; counter < args.length; counter++) 
             {
@@ -152,8 +156,13 @@ class mcramctl
                         break;
                     case "--execute":
                     case "-e":
-                        cmd = args[counter + 1];
-                        counter++;
+						cmd = "/";
+						for (int execCounter = counter + 1; execCounter < args.length; execCounter++)
+						{
+							cmd = cmd + args[execCounter] + " ";
+						}
+						isExec = true;
+						counter = args.length;
                         break;
                     case "--help":
                     case "-h":
@@ -182,7 +191,6 @@ class mcramctl
                     case "--verbose":
                     case "-v":
                         debugMode = true;
-                        counter++;
                         break;
                     case "--version":  
                     case "-V":
@@ -205,12 +213,12 @@ class mcramctl
                 }
             }
             
+            // "mcramd:start" = start the server
             // "mcramd:stop" = TBD
-            //
             // "mcramd:exec" = exec a command on the server
-            // Example: mcramd:exec,say Hello Minecraft World!
+				// Example: mcramd:exec,say Hello Minecraft World!
             
-            if (cmd == null) 
+            if (isExec == false) 
             {
                 // seperate our command string by commas "," for 
                 // mcramd to process through
@@ -230,7 +238,7 @@ class mcramctl
                 // mcramd:start,R:/,1024,C:/Users/Steve/server/,1024,windows,debug:true
             } else 
             {
-                socketText = cmd;
+                socketText = "mcramd:exec," + cmd;
             }
             
             debug("socketText=" + socketText);
@@ -260,7 +268,12 @@ class mcramctl
         
         debug("socketFile=" + socketFile);   
         mcramctl.writeToFile(socketFile, socketText);
-    	Mcramd.main(args); // execute the MCRAM daemon class
-
+        // if a command is being sent to a running server then
+        // do not try to start a new Minecraft server as a background thread;
+        // this will cause MCRAM to "lock-up"
+        if (isExec == false)
+        {
+			Mcramd.main(args); // execute the MCRAM daemon class
+		}
     }
 } 
