@@ -1,4 +1,4 @@
-#MCRAM 1.0.0 (beta)
+#MCRAM 1.0.0b1 (beta)
 
 Dependencies: Java 7+ (Java 8 recommended)
 Support Operating Systems: Linux, MacOS X, Windows
@@ -7,15 +7,18 @@ MCRAM is designed to help run a Minecraft server entirely in RAM on any operatin
 
 ## INSTALLATION
 All: Install the Java Runtime Environment (JRE) 7 or 8.
-Windows: Install "imdisk" from [here](http://www.ltr-data.se/files/imdiskinst.exe) for handling RAM disks. 
+Windows: Install "imdisk" from [here](http://www.ltr-data.se/files/imdiskinst.exe) for handling RAM disks.
 
+If you do not have "git" installed on your local machine to clone the repository, simply download the zip file from [here](https://github.com/ekultails/mcram/archive/master.zip) instead.
 
 ## USAGE
-MCRAM is bundled into a convient jar file. If you run it with no commands, it will interactively prompt you for all of the information it needs. At the bare minimum, you need to specify the source directory (a full path to the Minecraft server's jar file) and the destination directory (on Windows, an unused drive letter to create a RAM disk on). If you do not have "git" installed on your local machine, simply download the zip file from [here](https://github.com/ekultails/mcram/archive/master.zip) instead.
+MCRAM is bundled into a convient jar file. If you run it with no commands, it will interactively prompt you for all of the information it needs. At the bare minimum, you need to specify the source directory (a full path to the Minecraft server's jar file) and the destination directory (on Windows, an unused drive letter to create a RAM disk on).
+
+On UNIX-like systems, the mcramctl utility should be run with either "sudo" or as the root user to allow the mounting of the RAM file system.
 ```
-$ git clone https://github.com/ekultails/mcram.git
-$ cd mcram/java/built/
-$ java -jar mcramctl.jar --help
+# git clone https://github.com/ekultails/mcram.git
+# cd mcram/java/built/
+# java -jar mcramctl.jar --help
 mcramctl options
 	--help, -h
 		display these help options
@@ -39,10 +42,13 @@ mcramctl options
 		default: 60
 	--execute, -e
 		send a command to the Minecraft server
+	--stop
+		stop the Minecraft server
 	--verbose, -v
 		display debugging information
 	--version, -V
 		show current MCRAM version
+
 ```
 After a server has been started with MCRAM, commands for the Minecraft server can be run by using the "-e" or "--execute" arguements. For example, the command below will run on the server to change the user Skywalker's gamemode to creative (1).
 ```
@@ -50,6 +56,11 @@ $ java -jar mcramctl -e gamemode 1 Skywalker
 ```
 
 ## DEVELOPERS
+### BRANCHES
+
+* master = Stable. Normal end-users should use this branch.
+* dev = Development. Features are added, modified, and/or removed and after amble testing these changes will be pushed to the master branch.
+
 ### SOURCE CODE
 All of the source code is located in the java/ directory. Currently there are two files, "mcramctl" to handle the user-interface and "Mcramd" to control the background daemon. After making any changes you should rebuild the latest jar file.
 ```
@@ -57,7 +68,7 @@ $ cd java/
 $ rm built/mcramctl.jar
 $ jar -cfmv built/mcramctl.jar manifest.txt *.class
 ```
-This creates (c) a new jar file (f) with the manifest file (e; this specifies, at least, what is the main class) and will verbosely show us the process of building the jar (v). 
+This creates (c) a new jar file (f) with the manifest file (e; this specifies, at least, what is the main class) and will verbosely show us the process of building the jar (v).
 
 ### SOCKETS
 All commands are sent to the "mcramd" daemon via a socket-like text file.
@@ -74,9 +85,19 @@ Alternatively, server commands can be executed via the mcramctl utilty. Only the
 $ java -jar mcramctl.jar --execute say Hello Imperial Senate
 ```
 Mcramd currently recognizes 3 flags. Every flag is then seperated by a comma "," to give each of the options.
+
 1. mcramd:start
+  * All of the options for mounting and starting the Minecraft server should be listed here.
+  * Example 1 - Mount 512MB of RAM onto the /tmpfs/ directory. Then sync over the server from /home/user/mc_server/ to /tmpfs/. Start the Minecraft server, giving Java 1024MB of RAM to run with.
+    *  mcramd:start,/tmpfs,512,/home/user/mc_server,1024,linux,debug:false
+  * Example 2 - Mount 1024MB of RAM onto the partition letter "R:" on Windows. Then sync over the server from C:/Users/Steve/server/ to R:/. Start the Minecraft server, giving Java 2048MB of RAM to run with. Debugging is enabled here to see more verbose information about what's being executed.
+    *  mcramd:start,R:/,1024,C:/Users/Steve/server/,2048,windows,debug:true
 2. mcramd:exec
+  * Provide the full command to execute on the server.
+  * Example
+    * mcramd:exec,/say Hello World
 3. mcramd:stop
+  * No options are required. The "stop" command will be sent to the server, MCRAM will wait 1 second, and then copy over the files from RAM back to the disk.
 
 ## LIMITATIONS
 These are current limitations that will be addressed in future releases.

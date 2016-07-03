@@ -17,12 +17,6 @@ class mcramctl
             System.out.println("DEBUG: " + msg);
         }
     }
-    
-    
-    public mcramctl() 
-    {
-        //contrusctor 
-    }
 
     // find the current operating system
     public static String findOS() 
@@ -110,6 +104,8 @@ class mcramctl
                               "\t\tdefault: 60\n" +
                           "\t--execute, -e\n" +
 						      "\t\tsend a command to the Minecraft server\n" +
+						  "\t--stop\n" +
+						      "\t\tstop the Minecraft server\n" +
                           "\t--verbose, -v\n" +
                               "\t\tdisplay debugging information\n" +
                           "\t--version, -V\n" +
@@ -123,6 +119,7 @@ class mcramctl
         String sourceDir = null;
         String destinationDir = null;
         boolean isExec = false;
+        boolean isStop = false;
         String cmd = "";
         String runRAM = "512";
         String mountRAM = "512";
@@ -156,12 +153,12 @@ class mcramctl
                         break;
                     case "--execute":
                     case "-e":
+                    	isExec = true;
 						cmd = "/";
 						for (int execCounter = counter + 1; execCounter < args.length; execCounter++)
 						{
 							cmd = cmd + args[execCounter] + " ";
 						}
-						isExec = true;
 						counter = args.length;
                         break;
                     case "--help":
@@ -183,6 +180,10 @@ class mcramctl
                         sourceDir = args[counter + 1];
                         counter++;
                         break;
+                    case "--stop":
+                    	isStop = true;
+						cmd = "mcramd:stop"; 
+						break;
                     case "--sync-time":
                     case "-t":
                         syncTime = args[counter + 1];
@@ -194,7 +195,7 @@ class mcramctl
                         break;
                     case "--version":  
                     case "-V":
-                        System.out.println("MCRAM version: 1.0.0-alpha");
+                        System.out.println("MCRAM version: 1.0.0b1");
                         System.exit(0);
                     default:
                         break;
@@ -214,11 +215,11 @@ class mcramctl
             }
             
             // "mcramd:start" = start the server
-            // "mcramd:stop" = TBD
+            // "mcramd:stop" = stop the server
             // "mcramd:exec" = exec a command on the server
 				// Example: mcramd:exec,say Hello Minecraft World!
             
-            if (isExec == false) 
+            if (isExec == false && isStop == false) 
             {
                 // seperate our command string by commas "," for 
                 // mcramd to process through
@@ -236,10 +237,13 @@ class mcramctl
                 // mcramd:start,/tmpfs,512,/home/user/mc_server,1024,linux,debug:false
                 // OR
                 // mcramd:start,R:/,1024,C:/Users/Steve/server/,1024,windows,debug:true
-            } else 
+            } else if (isExec == true && isStop == false)
             {
                 socketText = "mcramd:exec," + cmd;
-            }
+            } else if (isStop == true)
+            {
+				socketText = "mcramd:stop";
+			} 
             
             debug("socketText=" + socketText);
             

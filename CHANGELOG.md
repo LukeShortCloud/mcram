@@ -1,8 +1,9 @@
-# Change Log
-## [1.0.0-dev] 
+# MCRAM Change Log
+## [1.0.0b1] 
 ### Added
 * Created a change log
-* Rewrote MCRAM from Bash to Java
+* Rewritten from Bash into Java
 * Windows support
 * CLI options
-* Ability to send commands to the Minecraft server
+  * Ability to send commands to the Minecraft server
+  * Ability to stop a server

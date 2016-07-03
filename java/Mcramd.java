@@ -11,11 +11,13 @@ import java.util.Scanner;
 
 class Mcramd 
 {
-    public static Process MinecraftServer = null;
-    public static String java_binary = "" + System.getProperty("java.home") +
+    private static Process MinecraftServer = null;
+    private static String java_binary = "" + System.getProperty("java.home") +
                                        "/bin/java";
-    public static boolean serverStarted = false;
-    public static boolean debugMode = false;
+    private static boolean serverStarted = false;
+    private static boolean debugMode = false;
+	private static String sourceDir = null;
+	private static String destinationDir = null;
 
     public static void debug(String msg) 
     {
@@ -27,7 +29,6 @@ class Mcramd
 
     public static String readSock(String fileName) 
     {
-    
         File fileToRead = new File(fileName);
         FileReader fileReader = null;
         
@@ -49,7 +50,6 @@ class Mcramd
         } catch (IOException e) {
             e.printStackTrace();
         }
-
         return returnSocket;
     }
 
@@ -181,6 +181,7 @@ class Mcramd
     // send standard input to a process
     public static void stdin(Process p, String command) 
     {
+		debug("stdin - command=" + command);
         // a Scanner is used to push standard input to the process   
         Scanner stdin_scanner = new Scanner(System.in);
         PrintWriter stdin = new PrintWriter(MinecraftServer.getOutputStream());
@@ -191,6 +192,7 @@ class Mcramd
     // run a native CLI command
     public static Process execCmd(String runCmd, File runDir) 
     {
+		debug("execCmd - runCmd: " + runCmd);
         Process p = null; /* a variable must be defined outside of the 
                              try/catch scope and be assigned a value of at least null */
     
@@ -286,14 +288,13 @@ class Mcramd
                         e.printStackTrace();
                     }                        
                 }
-                
                 // full mcramd:start options:
                 // (1) <mount_directory>, (2) <tmpfs_size_in_MB>, 
                 // (3) <source_directory>, (4) <java_RAM_exec_size_in_MB>,
                 // (5) <sync_time>, (6) <operating_system_name>, 
                 // (7) debug mode (true or false) 
                 String minecraftFullJarPath = sockSplit[3];
-                String destinationDir = sockSplit[1];
+                destinationDir = sockSplit[1];
                 String[] syncTime = sockSplit[5].split(":");
                 debugMode = Boolean.valueOf(sockSplit[7].split(":")[1]);
                 // extract the syncing time (in minutes) variable
@@ -311,7 +312,6 @@ class Mcramd
                 // the Minecraft server jar file
                 String minecraftJar = minecraftFullJarPathSplit[minecraftFullJarPathSplit.length - 1];
                 debug("minecraftJar: " + minecraftJar);
-                String sourceDir = null;
                 
                 // get the full path to the Minecraft server's directory;
                 // it should be each value in the array besides the last one
@@ -345,8 +345,7 @@ class Mcramd
                 {
                     System.out.println("Unsupported operating system.");
                     System.exit(1);
-                }
-                
+                } 
                 // copy the files into the mounted RAM disk
                 try 
                 {
@@ -355,7 +354,6 @@ class Mcramd
                 {
                     e.printStackTrace();
                 }
-                
                 // finally, we start the Minecraft server
                 mcramd.startMinecraftServer(destinationDir, minecraftJar, javaExecRAM);
             
@@ -366,6 +364,15 @@ class Mcramd
                     
                     while (true)
                     {
+						// wait this long before saving again
+                        try 
+                        {
+                            TimeUnit.MINUTES.sleep(syncTimeInt);
+                        } catch(InterruptedException e) 
+                        {
+                            e.printStackTrace();
+                        }
+						
                         // save the server
                         stdin(MinecraftServer, "save all");
                         
@@ -376,7 +383,6 @@ class Mcramd
                         {
                             e.printStackTrace();
                         }
-                        
                         // stop the saving to avoid corruption
                         stdin(MinecraftServer, "save-off");
                         
@@ -396,21 +402,9 @@ class Mcramd
                         {
                             e.printStackTrace();
                         }
-                            
-
                         // finally, turn saving back on again
                         stdin(MinecraftServer, "save-on");
                         stdin(MinecraftServer, "say MCRAM saved changes to disk.");
-                
-                        // wait this long before starting the loop again
-                        try 
-                        {
-                            TimeUnit.MINUTES.sleep(syncTimeInt);
-                        } catch(InterruptedException e) 
-                        {
-                            e.printStackTrace();
-                        }
-
                     }
                 }
             } 
@@ -440,18 +434,38 @@ class Mcramd
                 }
                 
 				String socketFile = findSocket();
-
                 // read the socket until it recieves the start command
-                //while (sockSplit[0].contains("mcramd:exec") == false)
                 while (true) 
                 {
 					String socketText = readSock(socketFile);
 					String[] sockSplit = socketText.split(",");
+					String command = "";
                 
 					if (sockSplit[0].contains("mcramd:exec") == true)
 					{
-						String command = sockSplit[1];
+						command = sockSplit[1];
 						stdin(MinecraftServer, command);
+					} else if (sockSplit[0].contains("mcramd:stop") == true)
+					{
+						command = "stop";
+						stdin(MinecraftServer, command);
+						// wait for the server to stop and save
+						try 
+						{
+							TimeUnit.SECONDS.sleep(1);
+						} catch(InterruptedException e) 
+						{
+							e.printStackTrace();
+						}
+						// copy the server back from RAM to the disk
+                        try 
+                        {
+                            cpDir(new File(destinationDir), new File(sourceDir));
+                        } catch(IOException e)
+                        {
+                            e.printStackTrace();
+                        }
+						System.exit(0);
 					}
 					
 					// we want to clear out the socketFile so the command
